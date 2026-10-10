@@ -60,20 +60,6 @@ struct ExcludedAppsView: View {
     }
 }
 
-struct ExcludedAppsWindowView: View {
-    let model: AppModel
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Whoosh never captures these apps, even after you choose Look Now. You can also exclude the app you're using from the menu-bar menu.")
-                .fixedSize(horizontal: false, vertical: true)
-            ExcludedAppsView(model: model)
-        }
-        .padding(20)
-        .frame(width: 420, height: 420)
-    }
-}
-
 private struct AppIcon: View {
     let bundleIdentifier: String?
 

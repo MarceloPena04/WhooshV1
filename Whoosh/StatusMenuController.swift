@@ -56,6 +56,15 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         menu.addItem(lookNowItem)
         menu.addItem(.separator())
 
+        menu.addItem(note("Look At"))
+        let thisWindow = item("This Window", #selector(lookAtThisWindow))
+        thisWindow.state = model.settings.captureScope == .window ? .on : .off
+        menu.addItem(thisWindow)
+        let wholeScreen = item("Whole Screen", #selector(lookAtWholeScreen))
+        wholeScreen.state = model.settings.captureScope == .screen ? .on : .off
+        menu.addItem(wholeScreen)
+        menu.addItem(.separator())
+
         if let name = model.appInUseName, let bundleIdentifier = model.appInUseBundleIdentifier {
             if model.settings.exclusions.contains(bundleIdentifier) {
                 menu.addItem(item("Stop Excluding “\(name)”", #selector(stopExcludingAppInUse)))
@@ -63,7 +72,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
                 menu.addItem(item("Exclude “\(name)”", #selector(excludeAppInUse)))
             }
         }
-        menu.addItem(item("Excluded Apps…", #selector(showExcludedApps)))
+        menu.addItem(item("Settings…", #selector(showSettings)))
         if !model.hasPermission {
             menu.addItem(item("Allow Screen Recording…", #selector(requestPermission)))
         }
@@ -74,8 +83,10 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
 
     private var statusLine: String {
         switch model.eligibility {
-        case .eligible: "Ready to look at \(model.appInUseName ?? "this window")"
-        case .skipped(let reason): AppModel.describe(reason, appName: model.appInUseName)
+        case .eligible(.window): "Ready to look at \(model.appInUseName ?? "this window")"
+        case .eligible(.display): "Ready to look at the whole screen"
+        case .skipped(let reason):
+            AppModel.describe(reason, appName: model.appInUseName, bundleIdentifier: model.appInUseBundleIdentifier)
         }
     }
 
@@ -119,7 +130,9 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     @objc private func lookNow() { model.lookNow() }
     @objc private func excludeAppInUse() { model.excludeAppInUse() }
     @objc private func requestPermission() { model.requestPermission() }
-    @objc private func showExcludedApps() { windows.showExcludedApps(model: model) }
+    @objc private func lookAtThisWindow() { model.setCaptureScope(.window) }
+    @objc private func lookAtWholeScreen() { model.setCaptureScope(.screen) }
+    @objc private func showSettings() { windows.showSettings(model: model) }
     @objc private func showOnboarding() { windows.showOnboarding(model: model) }
 
     @objc private func stopExcludingAppInUse() {

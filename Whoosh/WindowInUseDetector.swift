@@ -11,6 +11,11 @@ struct WindowObservation {
     var window: WindowIdentity?
     /// The window's frame in global display coordinates (origin at the top left of the main display).
     var windowFrame: CGRect?
+    /// The display holding the window in use, or the one under the pointer when there is no window.
+    var displayID: CGDirectDisplayID?
+    /// That display's frame, in the same coordinates as `windowFrame`.
+    var displayFrame: CGRect?
+    var menuBarHeight: CGFloat = 0
     var isScreenLocked = false
     var isSecureInputActive = false
 }
@@ -57,6 +62,13 @@ final class WindowInUseDetector {
         if let (windowID, frame) = Self.frontWindow(ofProcess: app.processIdentifier) {
             observation.window = WindowIdentity(windowID: windowID, bundleIdentifier: bundleIdentifier)
             observation.windowFrame = frame
+        }
+
+        let screen = observation.windowFrame.flatMap(ScreenGeometry.screen(containing:)) ?? ScreenGeometry.screenUnderPointer()
+        if let screen, let displayID = ScreenGeometry.displayID(of: screen) {
+            observation.displayID = displayID
+            observation.displayFrame = CGDisplayBounds(displayID)
+            observation.menuBarHeight = ScreenGeometry.menuBarHeight(of: screen)
         }
         return observation
     }

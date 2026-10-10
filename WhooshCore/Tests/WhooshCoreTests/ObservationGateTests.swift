@@ -2,7 +2,7 @@ import Testing
 import WhooshCore
 
 struct ObservationGateTests {
-    private let window = WindowIdentity(windowID: 1, bundleIdentifier: "com.example.Editor")
+    private let window = CaptureTarget.window(WindowIdentity(windowID: 1, bundleIdentifier: "com.example.Editor"))
 
     @Test func admitsOneObservationAtATime() throws {
         var gate = ObservationGate()

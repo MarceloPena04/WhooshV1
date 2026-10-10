@@ -40,7 +40,7 @@ final class OverlayController {
     ///   coordinates; the bubble goes in the bottom-right corner of its display.
     func show(_ content: BubbleContent, nearWindowAt windowFrame: CGRect?, for duration: Duration = .seconds(8)) {
         dismiss(animated: false)
-        guard let screen = Self.screen(for: windowFrame) else { return }
+        guard let screen = ScreenGeometry.screen(containing: windowFrame) else { return }
 
         let view = BubbleView(
             content: content,
@@ -100,23 +100,5 @@ final class OverlayController {
             guard !Task.isCancelled else { return }
             self?.dismiss(animated: true)
         }
-    }
-
-    /// The display holding most of the window in use, or the main display.
-    private static func screen(for windowFrame: CGRect?) -> NSScreen? {
-        let screens = NSScreen.screens
-        guard let windowFrame, let primary = screens.first else { return NSScreen.main ?? screens.first }
-        // Global display coordinates have a top-left origin; AppKit's are bottom-left.
-        let flipped = CGRect(
-            x: windowFrame.minX,
-            y: primary.frame.maxY - windowFrame.maxY,
-            width: windowFrame.width,
-            height: windowFrame.height
-        )
-        func overlap(_ screen: NSScreen) -> CGFloat {
-            let intersection = screen.frame.intersection(flipped)
-            return intersection.isNull ? 0 : intersection.width * intersection.height
-        }
-        return screens.max { overlap($0) < overlap($1) }
     }
 }

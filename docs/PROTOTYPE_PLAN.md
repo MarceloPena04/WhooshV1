@@ -2,7 +2,7 @@
 
 **Version:** 0.3 · **Date:** 10 October 2026  
 **Status:** Verified for M0 on 10 October 2026  
-**Confirmed by the founder:** macOS first; cloud AI; bring your own API key (BYOK); Whoosh observes whichever window the user is working in; a Hush mode independent of macOS Focus ([§13.3](#133-founder-decisions))
+**Confirmed by the founder:** macOS first; cloud AI; bring your own API key (BYOK); Whoosh observes whichever window the user is working in, or the whole screen they're working on if they choose (This window is the default); a Hush mode independent of macOS Focus ([§13.3](#133-founder-decisions))
 
 ## How to use this plan
 
@@ -47,7 +47,7 @@ The initial audience hypothesis is people doing solo writing or visual design wo
 
 ### 1.2 Context preserved from the original idea and presentation
 
-- Whoosh periodically looks at the window the user is currently working in, at a user-controlled pace.
+- Whoosh periodically looks at the window the user is currently working in, or, if the user chooses, the whole screen, at a user-controlled pace.
 - It asks short contextual questions to learn what the user is doing and why.
 - Questions can be answered in place or ignored; ignored messages disappear without demanding a reply.
 - Suggestions and opinions generally require no response.
@@ -62,7 +62,7 @@ The presentation's “always knows what you are doing” language is an aspirati
 
 ### 1.3 Core interaction loop
 
-1. Observe the window the user is working in, unless Whoosh is paused or the app is excluded.
+1. Observe the window the user is working in (or the whole screen, if chosen), unless Whoosh is paused or the app in use is excluded.
 2. Interpret visible evidence together with a small amount of relevant context.
 3. Decide whether silence, a question, or a comment is appropriate.
 4. Apply local rules governing interruption and presentation.
@@ -92,7 +92,8 @@ Example: while someone edits a landing page, Whoosh asks whether it is intended 
 | Xcode app target plus a local `WhooshCore` Swift package | Adopted | See §4.4. |
 | App Sandbox and Hardened Runtime from the first build | Adopted | See §4.4. |
 | Menu-bar app without a Dock icon | Adopted | Whoosh stays out of the way; settings open from the menu. The menu-bar icon shows whether Whoosh is watching, paused, hushed, or skipping an excluded app. |
-| Single-window capture filter | Adopted | Only the window in use enters the image; Whoosh's overlay and neighbouring windows cannot (§5.1). |
+| Single-window capture filter | Adopted | In This window, only the window in use enters the image; Whoosh's overlay and neighbouring windows cannot (§5.1). |
+| Two capture scopes | Confirmed | This window (default) or Whole screen (opt-in). Whole screen captures the display in use through a filter that removes excluded apps, Whoosh, private system surfaces, and the menu bar (§5.1, §13.3). |
 | Screen Recording permission, not Apple's window picker | Adopted | Following the window in use across apps needs this permission; the picker only grants windows the user picks each session (§5.1). |
 | Hush, independent of macOS Focus | Confirmed | Whoosh's quiet mode has its own name and switch; macOS Focus does not change it (§3.4). |
 | No Accessibility or Input Monitoring permission | Adopted | Both are far broader than the stated behavior (§4.4, §5.1). |
@@ -111,7 +112,7 @@ Example: while someone edits a landing page, Whoosh asks whether it is intended 
 | Hosted subscription and billing | — | — | — | Included after validation |
 | Multiple providers or operating systems | — | — | — | Separate expansion decisions |
 
-The first implementation excludes audio capture, microphone access, keyboard-content logging, autonomous computer actions, cloud memory sync, a full activity transcript, observing more than one window or display at a time, and arbitrary generated animation code. Exact arrows attached to changing screen elements are also deferred. These exclusions keep the first proof of value small.
+The first implementation excludes audio capture, microphone access, keyboard-content logging, autonomous computer actions, cloud memory sync, a full activity transcript, observing more than one display at a time (or more than one window in This window), and arbitrary generated animation code. Exact arrows attached to changing screen elements are also deferred. These exclusions keep the first proof of value small.
 
 ### 2.3 Deliberate changes from the presentation
 
@@ -130,7 +131,7 @@ The plan departs from the original presentation in these places. Public copy, on
 
 ### 3.1 Initial onboarding
 
-Explain what Whoosh observes (the window the user is working in, in any app not on the exclusion list), which provider receives data, what is saved locally, and the difference between Pause and Hush. Let the user enter their key, review the app exclusion list, grant the Screen Recording permission, and explicitly start the first observation.
+Explain what Whoosh observes (the window the user is working in, or the whole screen if they choose it, never an app on the exclusion list), let the user choose between the two, which provider receives data, what is saved locally, and the difference between Pause and Hush. Let the user enter their key, review the app exclusion list, grant the Screen Recording permission, and explicitly start the first observation.
 
 Request the Screen Recording permission once, during onboarding, and explain its purpose. macOS grants it for the whole screen; Whoosh's own rules narrow it to the window in use, never an excluded app, and never while paused. Tell the user that macOS itself may periodically ask them to re-confirm the permission (§5.1), and that declining stops observation until it is granted again. Establish any additional permission needed for reliable active-window detection during the platform milestone; do not add it speculatively.
 
@@ -262,7 +263,7 @@ Use one model capable of understanding images and producing a structured respons
 
 ### 5.1 Capture eligibility
 
-The target policy is **the window the user is currently working in**: the frontmost normal window of the frontmost application, when that application is not excluded and the window is eligible. Observation follows the user as they switch windows and apps. Validate the window's identity immediately before capture and again before dispatch. Never fall back to full-display capture when detection or capture fails.
+The target policy is **the window the user is currently working in**: the frontmost normal window of the frontmost application, when that application is not excluded and the window is eligible. Observation follows the user as they switch windows and apps. Validate the window's identity immediately before capture and again before dispatch. In This window, never fall back to full-display capture when detection or capture fails; Whole screen is a separate scope the user must choose.
 
 **Eligibility.** A window is eligible only when all of these hold:
 
@@ -280,6 +281,8 @@ M0 implementation (10 October 2026): the frontmost application from `NSWorkspace
 **Permission (adopted).** Whoosh uses the Screen Recording permission and builds its capture filter from `SCShareableContent` at each capture. Apple's system picker, [`SCContentSharingPicker`](https://developer.apple.com/documentation/screencapturekit/sccontentsharingpicker), was considered and rejected: it grants only the windows or apps the user picks in a system dialog for that session, so it cannot follow the user across applications. macOS 15 periodically asks users to re-confirm the Screen Recording permission for apps that capture without the picker. Whoosh cannot suppress this. Onboarding must mention it, and M0 must record how each tested macOS release behaves.
 
 **Capture mechanism (adopted).** Capture uses a single-window content filter (`SCContentFilter(desktopIndependentWindow:)`) with `SCScreenshotManager`. This makes two boundaries structural: Whoosh's own overlay and neighbouring windows cannot appear in the image. Do not rely on `NSWindow.sharingType` for exclusion. The trade-off is that the application's other windows are excluded too, such as floating tool palettes, detached inspectors, popovers, and menus. Test this with a design app that uses floating palettes in M0, and document what the model can and cannot see.
+
+**Whole screen (confirmed 10 October 2026, §13.3).** An opt-in scope that captures the display the user is working on: the one holding most of the window in use, or the one under the pointer when the desktop is in front. Only that display is captured, never several at once. The filter is `SCContentFilter(display:excludingApplications:exceptingWindows:)`, so the window server leaves out the windows of excluded apps, Whoosh itself, and the system surfaces that can show private content: notification banners, older-style alerts, system password and Touch ID prompts, autofill, the Passwords menu-bar panel, and sign-in sheets (`ScreenExclusions` in `WhooshCore`; identifiers checked on macOS 15.7). What lies behind them shows through instead. The capture is cropped below the menu bar, whose status items can show calendar titles and similar details. The other rules still apply: nothing while paused, while the screen is locked, or during secure text entry, and nothing at all while an excluded app is in use (Whole screen does not capture everything around it instead). The request carries the window in use's position in the image, so the model can tell what the user is working on. The desktop counts in Whole screen; in This window it is skipped with a message that names the desktop. Whole screen discloses everything else on that display, including other people's messages in open chats; onboarding and Settings say so and suggest excluding chat and mail apps.
 
 **App exclusion list (adopted).** Users can exclude applications that Whoosh must never capture, identified by bundle identifier. The default list contains Whoosh itself, password managers, Keychain Access, the Passwords app, and System Settings. Onboarding shows the list, and excluding the app in use is one action from the menu. While an excluded application is in use, Whoosh skips capture and its menu-bar icon shows that it is skipping.
 
@@ -521,6 +524,9 @@ Use synthetic screens and an injected fake provider for repeatable failure tests
 | Reply and dismiss with Escape from the reply field; dismiss an unfocused bubble with the global shortcut; click back into work | Keyboard focus behaves predictably and reversibly; submitting the reply performs no capture or API call. |
 | Type in other apps, including Escape, while a bubble is visible | Only Whoosh's registered modifier shortcuts are consumed; all other keys reach the user's app. |
 | Use an app with floating palettes or popovers | Only the window in use appears in the provider image, and the documented limitation matches what is captured. |
+| Whole screen: show an excluded app's window, a notification banner, and a Whoosh bubble on the display in use | None of them, and no menu bar, appears in the provider image; what lies behind them does. |
+| Whole screen: make an excluded app the app in use, or focus a password field | No capture and no request. |
+| Whole screen with two displays | Only the display in use is captured, and the bubble appears on it. |
 | Start a new project/session with a reply or request pending | Old drafts and results cannot enter the new project's context. |
 | Return malformed JSON, excessive text, or an unknown gesture | Schema limits and safe fallback apply; raw output is not displayed. |
 | Put hostile instructions in the document | No settings, permissions, credential handling, or memory-persistence rule changes. |
@@ -591,6 +597,7 @@ Define what counts toward the allowance: observations, replies, model tiers, ret
 | Unclear capture boundaries | Active-window rule, app exclusion list, and platform spike before automation. | Window-switching, excluded-app, tab, hidden-window, and lifecycle tests. |
 | A whole-screen permission feels invasive | Clear onboarding, visible watching state in the menu bar, exclusion list, one-step Pause. | Onboarding and pilot feedback, including reactions to macOS re-confirmation prompts. |
 | Context from one piece of work leaks into comments on another | Use context only when it matches the visible work; project-scoped memory (§7.2). | Cross-app leakage tests. |
+| Whole screen sends third-party content, such as open chats, to the provider | Opt-in scope with This window as the default, explicit onboarding and Settings text, the exclusion list, and private system surfaces removed. | Whole screen boundary tests and pilot feedback. |
 | Privacy claims exceed actual behavior | Precise local promise, provider review, content-free diagnostics. | Storage/network inspection and provider policy record. |
 | Memory compounds mistakes | Provenance, confirmation, expiry, correction, and deletion. | Controlled memory comparisons and deletion tests. |
 | Cost grows faster than value | One provider, small context, measured request budgets. | Cost per active hour and monthly usage distributions. |
@@ -625,6 +632,7 @@ Decisions the founder made on 10 October 2026, after the plan review:
 1. **Whoosh observes whichever window the user is working in**, not one window chosen in advance. This needs the Screen Recording permission, granted once during onboarding. Each launch starts paused and needs one Resume action; Whoosh is meant to stay open, so this is rare. macOS 15 periodically asks users to re-confirm the permission, and Whoosh cannot prevent that (§5.1).
 2. **The quiet mode is called Hush**, and it is independent of macOS Focus (§3.4).
 3. **The license is deferred.** The repository can be public before a license is chosen. Until then, the default applies: others can view the code, but have no permission to reuse it. Choose one before accepting outside contributions or starting the M4 pilot (§13.2).
+4. **Two capture scopes** (decided after task 3, 10 October 2026): This window, the default, and Whole screen, opt-in. The founder's original intention was the whole screen; the window-only rule came from the plan review. Excluded apps and private system surfaces are removed from Whole screen captures (§5.1).
 
 ## 14. First implementation tasks
 
@@ -634,6 +642,7 @@ Decisions the founder made on 10 October 2026, after the plan review:
    - *Implemented.* Onboarding window (§3.1), menu-bar states (ready, paused, hushed, skipping, needs permission), Pause/Resume and Hush (§3.4), Look now with the single-window capture filter and placeholder replies from the fake provider, the global shortcuts (§4.4), and the app exclusion list with "Exclude this app" in the menu. Look now is disabled in the menu while paused or hushed and names the control to change; the shortcut shows a short notice bubble instead. Settings are stored as `Whoosh/settings.json` in Application Support inside the sandbox container. The screen-lock check fails closed: if macOS does not report the session state, Whoosh treats the screen as locked. Debug builds add the capture size to each bubble so capture can be checked without displaying or saving the image.
    - *Default exclusion list.* `com.apple.Passwords`, `com.apple.keychainaccess`, and `com.apple.systempreferences` were verified on macOS 15.7. `com.1password.1password`, `com.agilebits.onepassword7`, `com.bitwarden.desktop`, and `org.keepassxc.keepassxc` are well-known identifiers, but none of these apps is installed on the test machine.
    - *Manual checks passed on the test machine.* After granting Screen Recording, macOS 15.7 required quitting and reopening Whoosh. Bubbles appeared while typing without taking keystrokes. Switching apps during a Look now discarded it. Full-screen Safari captured the whole page (3024 × 1890 pixels) after the strip fix (§5.1). A window on the Sidecar display was captured and its bubble appeared on that display. Hush closed a visible bubble at once. The §11.1 boundary tests remain for task 4.
+   - *Whole screen added (founder decision 4, §13.3).* Look At in the menu, Settings, and onboarding choose between This window and Whole screen (§5.1). Manual checks passed: the built-in display was captured below its menu bar (3024 × 1888 pixels), as were the Sidecar display (2732 × 1998) and the desktop. With Passwords in use, Whoosh skipped. In This window, the desktop was skipped with the new message. Whether excluded apps, notifications, and the menu bar are absent from the image is proven in task 4.
 4. Prove active-window capture boundaries and typing behavior using synthetic content.
 5. Record M0 results and any permission or support limitations in this document.
 6. Select the first provider/model, verify retention and pricing, then implement the live M1 loop.
@@ -663,3 +672,4 @@ Official sources are linked next to the claims they support. Apple guidance esta
 | 10 October 2026 | The founder deferred the license choice; the repository may be public without one until outside contributions or the M4 pilot (§13.3). |
 | 10 October 2026 | Task 2 done: Xcode app target, `WhooshCore` package, fake provider, and response validation; bundle identifier `com.olecramanep.Whoosh` recorded (§14). |
 | 10 October 2026 | Task 3 done: permission flow, Pause/Hush, detection of the window in use, exclusion list, overlay, and shortcuts. Recorded the shortcut defaults (§4.4), the full-screen toolbar-strip finding and window-selection rule (§5.1), the Sidecar second display (§13.2), and the manual check results (§14). |
+| 10 October 2026 | Founder decision 4: two capture scopes, This window (default) and Whole screen (opt-in). Updated §1.2, §1.3, §2.1, §2.2, §3.1, §5.1 (Whole screen rules), §11.1 (Whole screen tests), §13.1 (third-party content risk), §13.3, and §14. |

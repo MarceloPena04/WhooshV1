@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 /// What started an observation (§5.2).
@@ -30,12 +31,16 @@ public struct CapturedImage: Sendable {
     public let data: Data
     public let pixelWidth: Int
     public let pixelHeight: Int
+    /// In a Whole screen capture, the visible part of the window in use, in
+    /// image pixels with a top-left origin. Nil for single-window captures.
+    public let focusRegion: CGRect?
 
-    public init(format: Format, data: Data, pixelWidth: Int, pixelHeight: Int) {
+    public init(format: Format, data: Data, pixelWidth: Int, pixelHeight: Int, focusRegion: CGRect? = nil) {
         self.format = format
         self.data = data
         self.pixelWidth = pixelWidth
         self.pixelHeight = pixelHeight
+        self.focusRegion = focusRegion
     }
 }
 
@@ -44,7 +49,7 @@ public struct CapturedImage: Sendable {
 public struct ObservationRequest: Sendable, Identifiable {
     public let id: UUID
     public let capturedAt: Date
-    public let window: WindowIdentity
+    public let target: CaptureTarget
     public let trigger: ObservationTrigger
     public let sessionRevision: Int
     public let memoryRevision: Int
@@ -53,7 +58,7 @@ public struct ObservationRequest: Sendable, Identifiable {
     public init(
         id: UUID = UUID(),
         capturedAt: Date,
-        window: WindowIdentity,
+        target: CaptureTarget,
         trigger: ObservationTrigger,
         sessionRevision: Int,
         memoryRevision: Int,
@@ -61,7 +66,7 @@ public struct ObservationRequest: Sendable, Identifiable {
     ) {
         self.id = id
         self.capturedAt = capturedAt
-        self.window = window
+        self.target = target
         self.trigger = trigger
         self.sessionRevision = sessionRevision
         self.memoryRevision = memoryRevision

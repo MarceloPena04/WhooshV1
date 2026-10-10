@@ -18,6 +18,7 @@ struct SettingsStoreTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         var settings = AppSettings()
         settings.onboardingCompleted = true
+        settings.captureScope = .screen
         settings.exclusions.add(ExcludedApp(bundleIdentifier: "com.example.Notes", name: "Notes"))
 
         try store.save(settings)
@@ -50,5 +51,6 @@ struct SettingsStoreTests {
         let settings = try store.load()
         #expect(settings.onboardingCompleted)
         #expect(settings.exclusions == .defaults)
+        #expect(settings.captureScope == .window)
     }
 }

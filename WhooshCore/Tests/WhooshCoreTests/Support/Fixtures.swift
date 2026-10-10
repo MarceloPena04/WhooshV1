@@ -7,7 +7,7 @@ extension ObservationRequest {
         ObservationRequest(
             id: id,
             capturedAt: Date(timeIntervalSince1970: 0),
-            window: WindowIdentity(windowID: 42, bundleIdentifier: "com.example.Editor"),
+            target: .window(WindowIdentity(windowID: 42, bundleIdentifier: "com.example.Editor")),
             trigger: .manual,
             sessionRevision: 0,
             memoryRevision: 0,

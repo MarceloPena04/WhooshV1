@@ -25,7 +25,7 @@ struct EligibilityTests {
     }
 
     @Test func eligibleWindowInUse() {
-        #expect(policy.evaluate(input(), exclusions: .defaults) == .eligible(editor))
+        #expect(policy.evaluate(input(), exclusions: .defaults) == .eligible(.window(editor)))
     }
 
     @Test func pausedWinsOverEverything() {
@@ -63,9 +63,44 @@ struct EligibilityTests {
         #expect(policy.evaluate(mismatched, exclusions: .defaults) == .skipped(.noWindow))
     }
 
+    private func screenInput(
+        app: AppInUse = .app(bundleIdentifier: "com.example.Editor"),
+        window: WindowIdentity? = WindowIdentity(windowID: 7, bundleIdentifier: "com.example.Editor"),
+        displayID: UInt32? = 1,
+        isSecureInputActive: Bool = false
+    ) -> EligibilityInput {
+        var screen = input(isSecureInputActive: isSecureInputActive, app: app, window: window)
+        screen.scope = .screen
+        screen.displayID = displayID
+        return screen
+    }
+
+    @Test func wholeScreenTargetsTheDisplayAndRemembersTheWindowInUse() {
+        let expected = DisplayTarget(displayID: 1, appBundleIdentifier: "com.example.Editor", focusWindow: editor)
+        #expect(policy.evaluate(screenInput(), exclusions: .defaults) == .eligible(.display(expected)))
+    }
+
+    @Test func wholeScreenIncludesTheDesktop() {
+        let finder = screenInput(app: .app(bundleIdentifier: "com.apple.finder"), window: nil)
+        let expected = DisplayTarget(displayID: 1, appBundleIdentifier: "com.apple.finder", focusWindow: nil)
+        #expect(policy.evaluate(finder, exclusions: .defaults) == .eligible(.display(expected)))
+        // This window mode still skips the desktop.
+        #expect(policy.evaluate(input(app: .app(bundleIdentifier: "com.apple.finder"), window: nil), exclusions: .defaults) == .skipped(.noWindow))
+    }
+
+    @Test func wholeScreenStillSkipsWhenAnExcludedAppIsInUse() {
+        let passwords = screenInput(app: .app(bundleIdentifier: "com.apple.Passwords"), window: WindowIdentity(windowID: 3, bundleIdentifier: "com.apple.Passwords"))
+        #expect(policy.evaluate(passwords, exclusions: .defaults) == .skipped(.excludedApp))
+        #expect(policy.evaluate(screenInput(isSecureInputActive: true), exclusions: .defaults) == .skipped(.secureInput))
+    }
+
+    @Test func wholeScreenNeedsADisplay() {
+        #expect(policy.evaluate(screenInput(displayID: nil), exclusions: .defaults) == .skipped(.noDisplay))
+    }
+
     @Test func indicatorPriorities() {
-        #expect(StatusIndicator(eligibility: .eligible(editor), isHushed: false) == .ready)
-        #expect(StatusIndicator(eligibility: .eligible(editor), isHushed: true) == .hushed)
+        #expect(StatusIndicator(eligibility: .eligible(.window(editor)), isHushed: false) == .ready)
+        #expect(StatusIndicator(eligibility: .eligible(.window(editor)), isHushed: true) == .hushed)
         #expect(StatusIndicator(eligibility: .skipped(.paused), isHushed: true) == .paused)
         #expect(StatusIndicator(eligibility: .skipped(.permissionMissing), isHushed: false) == .needsPermission)
         #expect(StatusIndicator(eligibility: .skipped(.excludedApp), isHushed: true) == .skipping(.excludedApp))

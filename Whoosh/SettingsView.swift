@@ -1,0 +1,55 @@
+import SwiftUI
+import WhooshCore
+
+struct SettingsView: View {
+    let model: AppModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Look at").font(.headline)
+                CaptureScopePicker(model: model)
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Excluded apps").font(.headline)
+                Text("Whoosh never captures these apps. In Whole Screen they're removed from the picture, and while one is in use Whoosh doesn't look at all. You can also exclude the app you're using from the menu-bar menu.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ExcludedAppsView(model: model)
+            }
+        }
+        .padding(20)
+        .frame(width: 460, height: 560)
+    }
+}
+
+/// The capture scope choice (§5.1), explained where it is made.
+struct CaptureScopePicker: View {
+    let model: AppModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Picker("Look at", selection: Binding(get: { model.settings.captureScope }, set: { model.setCaptureScope($0) })) {
+                Text("This window").tag(CaptureScope.window)
+                Text("Whole screen").tag(CaptureScope.screen)
+            }
+            .pickerStyle(.radioGroup)
+            .labelsHidden()
+
+            Text(explanation)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var explanation: String {
+        switch model.settings.captureScope {
+        case .window:
+            "Only the window you're working in. Other windows, the desktop, and Whoosh itself are never in the picture."
+        case .screen:
+            "Everything on the screen you're working on, including other windows and the desktop. Once an AI model is connected, all of it goes to the provider, including any chats or emails left open. Excluded apps, notifications, password prompts, and the menu bar are removed from the picture. Consider excluding chat and mail apps."
+        }
+    }
+}

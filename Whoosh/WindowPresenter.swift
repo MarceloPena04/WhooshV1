@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// Opens Whoosh's own windows (onboarding and excluded apps). While one is in
+/// Opens Whoosh's own windows (onboarding and settings). While one is in
 /// front, the app in use stays the one the user was working in (§5.1).
 @MainActor
 final class WindowPresenter: NSObject, NSWindowDelegate {
@@ -13,9 +13,9 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
         }
     }
 
-    func showExcludedApps(model: AppModel) {
-        show(id: "excluded", title: "Excluded Apps") {
-            ExcludedAppsWindowView(model: model)
+    func showSettings(model: AppModel) {
+        show(id: "settings", title: "Whoosh Settings") {
+            SettingsView(model: model)
         }
     }
 

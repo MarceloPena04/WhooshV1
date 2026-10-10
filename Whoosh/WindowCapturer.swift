@@ -6,14 +6,54 @@ import WhooshCore
 
 enum CaptureError: Error {
     case windowUnavailable
+    case displayUnavailable
     case encodingFailed
 }
 
-/// Captures exactly one window with a single-window content filter (§5.1), so
-/// neighbouring windows and Whoosh's own overlay cannot appear in the image.
-/// The image stays in memory; nothing is written to disk (§8.2).
+/// Captures what the capture scope allows (§5.1). The image stays in memory;
+/// nothing is written to disk (§8.2).
 struct WindowCapturer: Sendable {
-    func capture(_ window: WindowIdentity, processID: pid_t) async throws -> CapturedImage {
+    /// Whole screen: one display through a filter that removes excluded apps,
+    /// Whoosh, and private system surfaces, cropped below the menu bar. The
+    /// window server leaves those windows out, so what lies behind shows through.
+    func captureDisplay(
+        _ target: DisplayTarget,
+        exclusions: ScreenExclusions,
+        menuBarHeight: CGFloat,
+        focusWindowFrame: CGRect?
+    ) async throws -> CapturedImage {
+        let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+        guard let display = content.displays.first(where: { $0.displayID == target.displayID }) else {
+            throw CaptureError.displayUnavailable
+        }
+        let hidden = content.applications.filter {
+            exclusions.excludes(bundleIdentifier: $0.bundleIdentifier, processName: $0.applicationName)
+        }
+        let filter = SCContentFilter(display: display, excludingApplications: hidden, exceptingWindows: [])
+        let scale = CGFloat(filter.pointPixelScale)
+        let source = CGRect(
+            x: 0,
+            y: menuBarHeight,
+            width: CGFloat(display.width),
+            height: CGFloat(display.height) - menuBarHeight
+        )
+        let configuration = SCStreamConfiguration()
+        configuration.sourceRect = source
+        configuration.width = max(1, Int(source.width * scale))
+        configuration.height = max(1, Int(source.height * scale))
+        configuration.showsCursor = false
+
+        let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
+        guard let data = Self.pngData(from: image) else { throw CaptureError.encodingFailed }
+        let focusRegion = focusWindowFrame.flatMap {
+            FocusRegion.pixels(window: $0, display: display.frame, croppedTop: menuBarHeight, scale: scale)
+        }
+        return CapturedImage(format: .png, data: data, pixelWidth: image.width, pixelHeight: image.height, focusRegion: focusRegion)
+    }
+
+    /// This window: exactly one window through a single-window content filter,
+    /// so neighbouring windows and Whoosh's own overlay cannot appear.
+    func captureWindow(_ window: WindowIdentity, processID: pid_t) async throws -> CapturedImage {
         let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
         // Re-check identity right before capture: the same window ID, still on
         // screen, still owned by the same process and app.

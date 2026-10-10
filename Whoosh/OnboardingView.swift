@@ -14,11 +14,14 @@ struct OnboardingView: View {
                     Text("Welcome to Whoosh")
                         .font(.largeTitle.bold())
 
-                    section("What Whoosh looks at", """
-                        Only the window you're working in, in any app that isn't on your excluded list. \
-                        Never the whole screen, other windows, or Whoosh itself. \
-                        It doesn't look while paused or while a password field is active.
-                        """)
+                    VStack(alignment: .leading, spacing: 8) {
+                        section("What Whoosh looks at", """
+                            You choose: the window you're working in, or the whole screen you're working on. \
+                            Either way, never your excluded apps or Whoosh itself, and nothing while paused \
+                            or while a password field is active. You can change this later in Settings.
+                            """)
+                        CaptureScopePicker(model: model)
+                    }
 
                     section("Where it goes", """
                         This early version sends nothing anywhere: its bubbles are built-in placeholders. \

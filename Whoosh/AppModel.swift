@@ -71,12 +71,14 @@ final class AppModel {
         appInUseName = observation.appName
         appInUseBundleIdentifier = observation.bundleIdentifier
         let input = EligibilityInput(
+            scope: settings.captureScope,
             isPaused: isPaused,
             hasCapturePermission: hasPermission,
             isScreenLocked: observation.isScreenLocked,
             isSecureInputActive: observation.isSecureInputActive,
             app: observation.app,
-            window: observation.window
+            window: observation.window,
+            displayID: observation.displayID
         )
         eligibility = policy.evaluate(input, exclusions: settings.exclusions)
         onIndicatorChange?()
@@ -143,22 +145,36 @@ final class AppModel {
 
         refresh()
         let observation = lastObservation
-        guard case .eligible(let window) = eligibility, let processID = observation.processID else {
+        guard case .eligible(let target) = eligibility, let processID = observation.processID else {
             if case .skipped(let reason) = eligibility {
-                overlay.showNotice(Self.describe(reason, appName: observation.appName), nearWindowAt: observation.windowFrame)
+                overlay.showNotice(
+                    Self.describe(reason, appName: observation.appName, bundleIdentifier: observation.bundleIdentifier),
+                    nearWindowAt: observation.windowFrame ?? observation.displayFrame
+                )
                 Log.capture.info("Look now skipped: \(reason.rawValue, privacy: .public)")
             }
             return
         }
-        guard let token = gate.begin(for: window) else { return }
-        lookTask = Task { await look(token: token, processID: processID, windowFrame: observation.windowFrame) }
+        guard let token = gate.begin(for: target) else { return }
+        lookTask = Task { await look(token: token, processID: processID, observation: observation) }
     }
 
-    private func look(token: ObservationGate.Token, processID: pid_t, windowFrame: CGRect?) async {
+    private func look(token: ObservationGate.Token, processID: pid_t, observation: WindowObservation) async {
         defer { gate.finish(token) }
         let started = ContinuousClock.now
+        let bubbleFrame = observation.windowFrame ?? observation.displayFrame
         do {
-            let image = try await capturer.capture(token.window, processID: processID)
+            let image = switch token.target {
+            case .window(let window):
+                try await capturer.captureWindow(window, processID: processID)
+            case .display(let display):
+                try await capturer.captureDisplay(
+                    display,
+                    exclusions: ScreenExclusions(list: settings.exclusions, ownBundleIdentifier: policy.ownBundleIdentifier),
+                    menuBarHeight: observation.menuBarHeight,
+                    focusWindowFrame: display.focusWindow == nil ? nil : observation.windowFrame
+                )
+            }
             let captureDuration = ContinuousClock.now - started
             // Validate again before dispatch (§5.1).
             guard isStillCurrent(token) else {
@@ -167,7 +183,7 @@ final class AppModel {
             }
             let request = ObservationRequest(
                 capturedAt: .now,
-                window: token.window,
+                target: token.target,
                 trigger: .manual,
                 sessionRevision: 0,
                 memoryRevision: 0,
@@ -180,16 +196,16 @@ final class AppModel {
                 Log.capture.info("Discarded before display: context changed")
                 return
             }
-            Log.capture.info("Look now: \(response.kind.rawValue, privacy: .public), \(image.pixelWidth, privacy: .public)x\(image.pixelHeight, privacy: .public) px, capture \(captureDuration.milliseconds, privacy: .public) ms")
+            Log.capture.info("Look now: \(response.kind.rawValue, privacy: .public), \(Self.scopeName(token.target), privacy: .public), \(image.pixelWidth, privacy: .public)x\(image.pixelHeight, privacy: .public) px, capture \(captureDuration.milliseconds, privacy: .public) ms")
             guard response.kind != .silent else { return }
             overlay.show(
                 BubbleContent(
                     style: response.kind == .question ? .question : .comment,
                     message: response.message,
                     gesture: response.gesture,
-                    footnote: Self.debugFootnote(image: image, captureDuration: captureDuration)
+                    footnote: Self.debugFootnote(target: token.target, image: image, captureDuration: captureDuration)
                 ),
-                nearWindowAt: windowFrame
+                nearWindowAt: bubbleFrame
             )
         } catch is CancellationError {
             Log.capture.info("Look now cancelled")
@@ -197,17 +213,17 @@ final class AppModel {
             let nsError = error as NSError
             Log.capture.error("Look now failed: \(nsError.domain, privacy: .public) \(nsError.code, privacy: .public)")
             if isStillCurrent(token) {
-                overlay.showNotice("Whoosh couldn't capture this window.", nearWindowAt: windowFrame)
+                overlay.showNotice("Whoosh couldn't capture that.", nearWindowAt: bubbleFrame)
             }
         }
     }
 
     /// Whether work for `token` may still show anything: not invalidated, not
-    /// paused or hushed, and the same window is still in use and eligible.
+    /// paused or hushed, and the same window (and display) is still in use and eligible.
     private func isStillCurrent(_ token: ObservationGate.Token) -> Bool {
         guard gate.isCurrent(token), !isPaused, !isHushed else { return false }
         refresh()
-        return eligibility == .eligible(token.window)
+        return eligibility == .eligible(token.target)
     }
 
     private func invalidateWork() {
@@ -224,7 +240,15 @@ final class AppModel {
         refresh()
     }
 
-    // MARK: - Exclusions
+    // MARK: - Settings
+
+    func setCaptureScope(_ scope: CaptureScope) {
+        guard scope != settings.captureScope else { return }
+        updateSettings { $0.captureScope = scope }
+        invalidateWork()
+        refresh()
+        Log.lifecycle.info("Capture scope: \(scope.rawValue, privacy: .public)")
+    }
 
     func excludeAppInUse() {
         guard let bundleIdentifier = appInUseBundleIdentifier else { return }
@@ -305,7 +329,7 @@ final class AppModel {
         refresh()
     }
 
-    static func describe(_ reason: SkipReason, appName: String?) -> String {
+    static func describe(_ reason: SkipReason, appName: String?, bundleIdentifier: String?) -> String {
         let app = appName ?? "This app"
         return switch reason {
         case .paused: "Whoosh is paused."
@@ -315,15 +339,29 @@ final class AppModel {
         case .ownApp: "Whoosh doesn't look at its own windows."
         case .excludedApp: "Skipping \(app): it's on your excluded apps list."
         case .secureInput: "Skipping: a password field is active."
-        case .noWindow: "There's no window to look at."
+        case .noWindow where bundleIdentifier?.lowercased() == "com.apple.finder":
+            "The desktop is in front. Click into a window, or choose Whole Screen in Whoosh's menu."
+        case .noWindow: "\(app) has no window to look at."
+        case .noDisplay: "Whoosh can't tell which screen you're using."
         }
     }
 
-    private static func debugFootnote(image: CapturedImage, captureDuration: Duration) -> String? {
+    private static func scopeName(_ target: CaptureTarget) -> String {
+        switch target {
+        case .window: "window"
+        case .display: "screen"
+        }
+    }
+
+    private static func debugFootnote(target: CaptureTarget, image: CapturedImage, captureDuration: Duration) -> String? {
         #if DEBUG
-        "Placeholder · captured \(image.pixelWidth)×\(image.pixelHeight) px in \(captureDuration.milliseconds) ms"
+        let scope = switch target {
+        case .window: "window"
+        case .display: image.focusRegion == nil ? "whole screen, desktop in front" : "whole screen"
+        }
+        return "Placeholder · \(scope) · \(image.pixelWidth)×\(image.pixelHeight) px in \(captureDuration.milliseconds) ms"
         #else
-        nil
+        return nil
         #endif
     }
 }

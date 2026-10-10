@@ -6,7 +6,7 @@ import Foundation
 public struct ObservationGate: Sendable {
     public struct Token: Sendable, Equatable {
         fileprivate let generation: Int
-        public let window: WindowIdentity
+        public let target: CaptureTarget
     }
 
     private var generation = 0
@@ -18,10 +18,10 @@ public struct ObservationGate: Sendable {
 
     /// Returns nil while another observation is in flight, so repeated
     /// triggers are debounced rather than queued.
-    public mutating func begin(for window: WindowIdentity) -> Token? {
+    public mutating func begin(for target: CaptureTarget) -> Token? {
         guard inFlight == nil else { return nil }
         generation += 1
-        let token = Token(generation: generation, window: window)
+        let token = Token(generation: generation, target: target)
         inFlight = token
         return token
     }

@@ -11,6 +11,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
     /// only once, so later requests open System Settings instead.
     public var screenRecordingRequested = false
     public var exclusions = ExclusionList.defaults
+    public var captureScope = CaptureScope.window
 
     public init() {}
 
@@ -19,6 +20,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         case onboardingCompleted
         case screenRecordingRequested
         case exclusions
+        case captureScope
     }
 
     /// Missing keys take their defaults, so adding a setting does not make older files unreadable.
@@ -28,6 +30,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         onboardingCompleted = try container.decodeIfPresent(Bool.self, forKey: .onboardingCompleted) ?? false
         screenRecordingRequested = try container.decodeIfPresent(Bool.self, forKey: .screenRecordingRequested) ?? false
         exclusions = try container.decodeIfPresent(ExclusionList.self, forKey: .exclusions) ?? .defaults
+        captureScope = try container.decodeIfPresent(CaptureScope.self, forKey: .captureScope) ?? .window
     }
 }
 
