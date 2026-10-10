@@ -1,8 +1,8 @@
 # Whoosh: product context and prototype plan
 
-**Version:** 0.2 · **Date:** 10 October 2026  
-**Status:** Verified for M0 on 10 October 2026. The founder decisions pending in [§13.3](#133-founder-decisions-pending) do not block M0 scaffolding.  
-**Confirmed by the founder:** macOS first, cloud AI, bring your own API key (BYOK)
+**Version:** 0.3 · **Date:** 10 October 2026  
+**Status:** Verified for M0 on 10 October 2026  
+**Confirmed by the founder:** macOS first; cloud AI; bring your own API key (BYOK); Whoosh observes whichever window the user is working in; a Hush mode independent of macOS Focus ([§13.3](#133-founder-decisions))
 
 ## How to use this plan
 
@@ -10,7 +10,7 @@ This document carries the product context into a small, testable implementation.
 
 Treat **confirmed** decisions as settled. **Adopted** choices were made during the plan review on 10 October 2026 and are what M0 builds; change them only by recording the reason. Treat **recommended** implementation choices and numerical defaults as starting hypotheses. Resolve **open** decisions at the milestone identified below. Update this document when a decision changes, including its reason and any affected tests.
 
-The immediate objective is to build one complete interaction: **look at a selected window, offer a grounded comment through an appealing overlay, accept a correction, and improve the next interaction.** Periodic background observation follows once that interaction works.
+The immediate objective is to build one complete interaction: **look at the window the user is working in, offer a grounded comment through an appealing overlay, accept a correction, and improve the next interaction.** Periodic background observation follows once that interaction works.
 
 ### Contents
 
@@ -47,7 +47,7 @@ The initial audience hypothesis is people doing solo writing or visual design wo
 
 ### 1.2 Context preserved from the original idea and presentation
 
-- Whoosh periodically looks at permitted screen content at a user-controlled pace.
+- Whoosh periodically looks at the window the user is currently working in, at a user-controlled pace.
 - It asks short contextual questions to learn what the user is doing and why.
 - Questions can be answered in place or ignored; ignored messages disappear without demanding a reply.
 - Suggestions and opinions generally require no response.
@@ -62,7 +62,7 @@ The presentation's “always knows what you are doing” language is an aspirati
 
 ### 1.3 Core interaction loop
 
-1. Observe an explicitly permitted surface.
+1. Observe the window the user is working in, unless Whoosh is paused or the app is excluded.
 2. Interpret visible evidence together with a small amount of relevant context.
 3. Decide whether silence, a question, or a comment is appropriate.
 4. Apply local rules governing interruption and presentation.
@@ -79,27 +79,29 @@ Example: while someone edits a landing page, Whoosh asks whether it is intended 
 | Decision | Status | Consequence |
 |---|---|---|
 | macOS first | Confirmed | Build and validate the desktop integration on one operating system. |
-| Cloud AI | Confirmed | Selected images and necessary context leave the device for the chosen provider; disclose this clearly. |
+| Cloud AI | Confirmed | Captured window images and necessary context leave the device for the chosen provider; disclose this clearly. |
 | BYOK first | Confirmed | The user supplies a provider key and pays that provider's usage charges. |
 | Open-source product direction | Established product intent | Choose a license before publishing; keep credentials and user data out of source control. |
 | Native Swift, SwiftUI, and AppKit | Recommended | Use native capture and window behavior with a small dependency footprint. |
 | One vision-capable provider/model | Recommended | Validate the core loop before adding provider selection or model routing. |
-| One selected window | Recommended | Keep capture scope understandable and testable. |
+| Follow the window in use | Confirmed | Whoosh observes whichever window the user is currently working in, across apps. Pause, Hush, and an app exclusion list control what it sees and says (§5.1). |
 | Manual interaction before periodic observation | Recommended | Separate basic understanding and overlay problems from timing problems. |
 | Predefined animation library | Recommended | The model selects an approved gesture; runtime animation generation is deferred. |
 | Small local structured text memory | Recommended | Start with session context, then add inspectable persistent records. |
 | Minimum macOS 15.0 | Adopted | Matches the only test machine. The capture APIs used need macOS 14.0+, but 14 stays unsupported until it has been tested. |
 | Xcode app target plus a local `WhooshCore` Swift package | Adopted | See §4.4. |
 | App Sandbox and Hardened Runtime from the first build | Adopted | See §4.4. |
-| Menu-bar app without a Dock icon | Adopted | Whoosh stays out of the way; settings open from the menu. |
-| Single-window capture filter | Adopted | Whoosh's overlay and neighbouring windows cannot enter the image (§5.1). |
+| Menu-bar app without a Dock icon | Adopted | Whoosh stays out of the way; settings open from the menu. The menu-bar icon shows whether Whoosh is watching, paused, hushed, or skipping an excluded app. |
+| Single-window capture filter | Adopted | Only the window in use enters the image; Whoosh's overlay and neighbouring windows cannot (§5.1). |
+| Screen Recording permission, not Apple's window picker | Adopted | Following the window in use across apps needs this permission; the picker only grants windows the user picks each session (§5.1). |
+| Hush, independent of macOS Focus | Confirmed | Whoosh's quiet mode has its own name and switch; macOS Focus does not change it (§3.4). |
 | No Accessibility or Input Monitoring permission | Adopted | Both are far broader than the stated behavior (§4.4, §5.1). |
 
 ### 2.2 Prototype stages
 
 | Capability | Manual prototype | Ambient prototype | Memory prototype | Later product |
 |---|---|---|---|---|
-| Selected-window capture and BYOK | Included | Retained | Retained | Broader capture options if validated |
+| Active-window capture, app exclusion list, and BYOK | Included | Retained | Retained | Site-level exclusions if validated |
 | “Look now” interaction | Included | Retained | Retained | Retained |
 | Short comments, questions, inline replies | Included | Retained | Retained | More polished presentation |
 | Four personality/presentation controls | Included with small option sets | Frequency becomes operational | Retained | More styles and presets |
@@ -109,30 +111,30 @@ Example: while someone edits a landing page, Whoosh asks whether it is intended 
 | Hosted subscription and billing | — | — | — | Included after validation |
 | Multiple providers or operating systems | — | — | — | Separate expansion decisions |
 
-The first implementation excludes audio capture, microphone access, keyboard-content logging, autonomous computer actions, cloud memory sync, a full activity transcript, multi-monitor observation, and arbitrary generated animation code. Exact arrows attached to changing screen elements are also deferred. These exclusions keep the first proof of value small.
+The first implementation excludes audio capture, microphone access, keyboard-content logging, autonomous computer actions, cloud memory sync, a full activity transcript, observing more than one window or display at a time, and arbitrary generated animation code. Exact arrows attached to changing screen elements are also deferred. These exclusions keep the first proof of value small.
 
 ### 2.3 Deliberate changes from the presentation
 
-The plan departs from the presentation in these places. Public copy, onboarding text, and later presentations must follow the plan, not the original slides.
+The plan departs from the original presentation in these places. Public copy, onboarding text, and later presentations must follow the plan.
 
 | Presentation | Plan | Reason |
 |---|---|---|
-| Slides 3 and 5: the image “becomes text, then it is discarded”; “Screenshots are never stored.” | The selected window's image is sent to the cloud provider, which may retain it under its own policy. Whoosh itself does not write screenshots to its files, caches, or logs (§8.2). | Cloud AI is confirmed, and converting the image to text first loses visual evidence needed for design feedback (§4.3). Never use the phrase “never stored”; use the §8.2 wording. |
-| Slides 3 and 5: detects deep focus automatically and stays silent. | A manual quiet switch (Focus, §3.4) in the prototype. Automatic timing heuristics come only after M2's deterministic rules work. | Inactivity and appearance are unreliable evidence that someone can be interrupted (§10, M2). |
-| Slide 6: the user's own keys “for screen reading and your LLM of choice.” | One provider, one vision-capable model, one key. | Validate the core loop first. Provider choice is a later expansion (§2.2). |
-| Slide 2: “You've had this draft open for an hour.” | Allowed only when the duration comes from Whoosh's own local record of observing the selected window during the current session, never from the model guessing from appearance (§6.3). Needs ambient observation, so not before M2. | Avoids inferring elapsed effort. |
-| Slide 4: four continuous sliders. | Three options per control (§3.2). | Small, testable option sets. |
-| Slide 3: “It always knows what you are doing.” | An approximate, time-limited understanding of visible activity (§1.2). | Intent and quality remain uncertain without evidence or confirmation. |
+| The image “becomes text, then it is discarded”; “Screenshots are never stored.” | The captured window's image is sent to the cloud provider, which may retain it under its own policy. Whoosh itself does not write screenshots to its files, caches, or logs (§8.2). | Cloud AI is confirmed, and converting the image to text first loses visual evidence needed for design feedback (§4.3). Never use the phrase “never stored”; use the §8.2 wording. |
+| Detects deep focus automatically and stays silent. | A manual quiet switch (Hush, §3.4) in the prototype. Automatic timing heuristics come only after M2's deterministic rules work. | Inactivity and appearance are unreliable evidence that someone can be interrupted (§10, M2). |
+| The user's own keys “for screen reading and your LLM of choice.” | One provider, one vision-capable model, one key. | Validate the core loop first. Provider choice is a later expansion (§2.2). |
+| “You've had this draft open for an hour.” | Allowed only when the duration comes from Whoosh's own local record of observing that window during the current session, never from the model guessing from appearance (§6.3). Needs ambient observation, so not before M2. | Avoids inferring elapsed effort. |
+| Four continuous sliders. | Three options per control (§3.2). | Small, testable option sets. |
+| “It always knows what you are doing.” | An approximate, time-limited understanding of visible activity (§1.2). | Intent and quality remain uncertain without evidence or confirmation. |
 
 ## 3. User experience and controls
 
 ### 3.1 Initial onboarding
 
-Explain what Whoosh observes, which provider receives data, what is saved locally, and the difference between Pause and Focus. Let the user enter their key, select a window, and explicitly start the first observation.
+Explain what Whoosh observes (the window the user is working in, in any app not on the exclusion list), which provider receives data, what is saved locally, and the difference between Pause and Hush. Let the user enter their key, review the app exclusion list, grant the Screen Recording permission, and explicitly start the first observation.
 
-Request screen-capture permission when needed and explain its purpose. Never treat an OS permission grant as consent to observe every available window. Window selection uses either Apple's system window picker or Whoosh's own window list; the two change what onboarding asks for (§5.1, founder decision 1 in §13.3). Establish any additional permission needed for reliable active-window detection during the platform milestone; do not add it speculatively.
+Request the Screen Recording permission once, during onboarding, and explain its purpose. macOS grants it for the whole screen; Whoosh's own rules narrow it to the window in use, never an excluded app, and never while paused. Tell the user that macOS itself may periodically ask them to re-confirm the permission (§5.1), and that declining stops observation until it is granted again. Establish any additional permission needed for reliable active-window detection during the platform milestone; do not add it speculatively.
 
-Start prototype launches with observation paused. Revalidate the capture selection after restarting. A restored preference must not silently authorize capture of a different window whose identifier has been reused.
+The permission, the key, and settings persist, so relaunching never repeats onboarding. Each launch starts paused, and one Resume action (menu or global shortcut) starts observation. Whoosh is designed to stay open, so this happens rarely. Launch at login is an opt-in setting added no earlier than M2, and it also starts paused.
 
 ### 3.2 The four independent controls
 
@@ -149,34 +151,34 @@ Capture interval is a separate advanced setting. Looking more frequently does no
 
 ### 3.3 Overlay behavior
 
-- Begin with one bubble in a user-selectable screen corner, on the display containing the selected window. Default to the bottom-right corner, away from macOS notifications in the top-right.
+- Begin with one bubble in a user-selectable screen corner, on the display containing the window in use. Default to the bottom-right corner, away from macOS notifications in the top-right.
 - Keep comments to one or two short sentences. Questions should ask for information that would improve subsequent help.
 - Show no more than one unsolicited bubble at a time. Do not stack missed messages or create a notification backlog.
 - An unanswered question expires without a reminder. Silence does not mean agreement, satisfaction, or consent to remember an inference.
 - Pause fading while the user hovers over, focuses, or replies to the bubble. Provide keyboard dismissal and a reduced-motion presentation. Escape dismisses only while Whoosh's reply field has focus. A bubble that never took focus cannot receive Escape, so it is dismissed with a global modifier shortcut (§4.4). Never register bare Escape globally: it would be taken from the user's app whenever a bubble is visible.
 - Showing or animating a bubble must not redirect typing. Keyboard focus is acquired only after an explicit reply action; test returning focus afterward.
 - Decorative areas should not block ordinary interaction. Keep the interactive footprint small and outside the work whenever possible.
-- Use no audio in the prototype. During explicit Focus, suppress both unsolicited text and decorative motion.
+- Use no audio in the prototype. During Hush, suppress both unsolicited text and decorative motion.
 - Avoid repeated observations. Collect evidence about ignored messages during ambient testing. Adaptive throttling is deferred until the baseline policy is evaluated; a later implementation may only tighten the chosen preset's limits, must not silently change that preset, and must have a visible reset.
 
 Start with two or three carefully designed gestures: question arrival, observation arrival, and brief acknowledgement. The final rendering is controlled by the app. Honor the system's reduced-motion preference even when the user has chosen an expressive style.
 
 Implement Animation amount and Visual personality as parameters of those same gestures (amplitude, duration, colour, and shape treatment), not as separately drawn variants for each of the nine combinations.
 
-### 3.4 Pause, Focus, and manual requests
+### 3.4 Pause, Hush, and manual requests
 
 | State/control | Capture and transmission | Comments and animation |
 |---|---|---|
 | Paused | No new capture or provider dispatch. Cancel active work where possible. | Clear pending output and close unsolicited overlays. |
-| Focus enabled | Observation may continue if ambient observation is enabled. This must be stated in the UI. | Immediately dismiss visible unsolicited bubbles, stop their animations, and discard pending output. |
+| Hush enabled | Observation may continue if ambient observation is enabled. This must be stated in the UI. | Immediately dismiss visible unsolicited bubbles, stop their animations, and discard pending output. |
 | Manual “Look now” (menu or global shortcut) | One deliberate observation, subject to the same capture and privacy rules. | One requested response; no unsolicited-message quota applies. |
 | Ambient enabled | Eligible samples at the chosen interval, within request limits. | Only eligible, timely, useful proposals within local interruption limits. |
 
-For the first implementation, disable “Look now” and reply submission while Paused or in Focus and explain which control to change. This keeps the initial semantics unambiguous. Preserve an active unsent reply draft in session memory until the user resumes or discards it; never submit it automatically on resume. Manual observations count toward API usage limits. The initial inline reply is a local context update and does not itself consume provider usage.
+For the first implementation, disable “Look now” and reply submission while Paused or Hushed and explain which control to change. This keeps the initial semantics unambiguous. Preserve an active unsent reply draft in session memory until the user resumes or discards it; never submit it automatically on resume. Manual observations count toward API usage limits. The initial inline reply is a local context update and does not itself consume provider usage.
 
-Pause prevents future dispatch; it cannot recall bytes already sent or guarantee that the provider will not charge for an interrupted request. Focus is an interruption control, not a privacy control.
+Pause prevents future dispatch; it cannot recall bytes already sent or guarantee that the provider will not charge for an interrupted request. Hush is an interruption control, not a privacy control.
 
-“Focus” is a working name in this plan. The name users see must not collide with macOS Focus, which users would otherwise expect to switch Whoosh's mode, or vice versa. The user-facing name, and whether an active macOS Focus also quiets Whoosh, are founder decision 2 in §13.3.
+Hush is independent of macOS Focus. Turning a macOS Focus on or off does not change Whoosh, and Hush does not change macOS. The different names keep users from expecting one to control the other.
 
 ### 3.5 Provisional defaults
 
@@ -190,7 +192,7 @@ These are starting values for testing, not agreed product promises.
 | Bubble fade time | 8 seconds, suspended during interaction |
 | Response field limits | `message`: at most 240 characters, for unsolicited and requested responses alike. Internal fields: `observation` at most 300, `uncertainty` at most 200. `memory_candidates` is ignored before M3; from M3, at most 3 candidates of at most 160 characters each. Longer conversational explanations are deferred |
 | Request cap | 50 provider attempts per rolling 24 hours from the first live request in M1. Manual observations, ambient observations, and retries all count. Set the ambient value before M2 |
-| Bubble position | Bottom-right corner of the display containing the selected window |
+| Bubble position | Bottom-right corner of the display containing the window in use |
 | Request deadline | 20 seconds total, including any retry |
 | Maximum snapshot age at display | 30 seconds, with context revalidation |
 | Initial feedback and visuals | Balanced, Subtle motion, Playful personality |
@@ -208,11 +210,11 @@ Recommended platform components:
 
 - **SwiftUI:** settings, onboarding, memory inspection, and bubble content.
 - **AppKit:** menu-bar presence and overlay window behavior.
-- **ScreenCaptureKit / SCScreenshotManager:** filtered capture of individual frames from the selected source.
+- **ScreenCaptureKit / SCScreenshotManager:** filtered capture of individual frames of the window in use.
 - **URLSession with ephemeral configuration:** provider requests without an application HTTP disk cache.
 - **Keychain Services:** the user's provider credential.
 - **Local JSON:** settings, persistent memory when enabled, and content-free usage counters.
-- **Carbon `RegisterEventHotKey`:** global shortcuts for Look now, Pause, and bubble dismissal without the Accessibility or Input Monitoring permission.
+- **Carbon `RegisterEventHotKey`:** global shortcuts for Look now, Pause/Resume, Hush, and bubble dismissal without the Accessibility or Input Monitoring permission.
 - **`os.Logger`:** content-free diagnostics (§8.2).
 
 Apple documents filtered screen capture and single-frame capture. AppKit supplies nonactivating panels, but reliable typing, click handling, and full-screen behavior remain integration tests rather than assumptions. See [Apple capture guidance](https://developer.apple.com/documentation/screencapturekit/capturing-screen-content-in-macos), [SCScreenshotManager](https://developer.apple.com/documentation/screencapturekit/scscreenshotmanager), and [nonactivating panels](https://developer.apple.com/documentation/appkit/nswindow/stylemask-swift.struct/nonactivatingpanel).
@@ -222,10 +224,10 @@ Apple documents filtered screen capture and single-frame capture. AppKit supplie
 | Component | Responsibility |
 |---|---|
 | App coordinator | Owns observation mode, session identity, lifecycle, and cancellation. |
-| Capture controller | Owns the selected-window allowlist, eligibility checks, image preparation, and temporary buffers. |
+| Capture controller | Owns detection of the window in use, the app exclusion list, eligibility checks, image preparation, and temporary buffers. |
 | Provider adapter | Sends the bounded image/context request to one approved provider endpoint and returns a typed result. |
 | Context store | Maintains bounded session context and later persistent memory, including provenance and expiry. |
-| Interruption policy | Enforces Focus, cooldowns, quotas, deduplication, and stale-result rejection. |
+| Interruption policy | Enforces Hush, cooldowns, quotas, deduplication, and stale-result rejection. |
 | Overlay controller | Displays validated text and predefined gestures without taking unintended focus. |
 | Usage tracker | Counts attempts, provider-reported usage, latency, errors, and estimated cost without recording screen content. |
 
@@ -236,7 +238,7 @@ Only the app coordinator and local policy code can authorize capture, dispatch, 
 ```text
 User request or eligible timer tick
     -> local capture and budget checks
-    -> selected-window screenshot in temporary memory
+    -> active-window screenshot in temporary memory
     -> image preparation + small relevant context
     -> direct HTTPS request to the user's model provider
     -> typed response validation
@@ -260,24 +262,30 @@ Use one model capable of understanding images and producing a structured respons
 
 ### 5.1 Capture eligibility
 
-The target policy is **one explicitly selected, eligible active window**. Validate its identity immediately before capture and again before dispatch. Never fall back to full-display capture when selection or capture fails.
+The target policy is **the window the user is currently working in**: the frontmost normal window of the frontmost application, when that application is not excluded and the window is eligible. Observation follows the user as they switch windows and apps. Validate the window's identity immediately before capture and again before dispatch. Never fall back to full-display capture when detection or capture fails.
 
-Checking only the frontmost application is insufficient: the same application can have several windows. The first platform milestone must establish how reliable window-level eligibility can be determined through public APIs and what permissions it requires. If it cannot be established reliably, restrict automatic observation to validated circumstances and expose the limitation before enabling it.
+**Eligibility.** A window is eligible only when all of these hold:
 
-Candidate signals for M0 are the frontmost application (`NSWorkspace`) combined with the front-to-back order of on-screen windows and `SCWindow.isOnScreen`. Do not use `SCWindow.isActive` for this: Apple documents it as whether the window is [currently streaming](https://developer.apple.com/documentation/screencapturekit/scwindow/isactive), not whether it has focus. Do not request the Accessibility permission to find the focused window. It is far broader than the stated behavior (it allows controlling the computer), and matching its windows to capture windows relies on private API.
+- Whoosh is not paused, and the window's application is not on the exclusion list.
+- It is a normal on-screen window: not minimized, hidden, on another Space, or a system overlay, and not one of Whoosh's own.
+- The screen is not locked and the machine is awake.
+- No secure text entry is in progress. `IsSecureEventInputEnabled()` reports this, for example while a password field has focus; verify it in M0.
 
-**Capture mechanism (adopted).** Capture uses a single-window content filter (`SCContentFilter(desktopIndependentWindow:)`) with `SCScreenshotManager`. This makes two boundaries structural: Whoosh's own overlay and neighbouring windows cannot appear in the image. Do not rely on `NSWindow.sharingType` for exclusion. The trade-off is that the target app's other windows are excluded too, such as floating tool palettes, detached inspectors, popovers, and menus. Test this with a design app that uses floating palettes in M0, and document what the model can and cannot see.
+Skip the capture otherwise. Do not capture hidden or minimized content merely because the capture API can provide it.
 
-**Window selection (founder decision 1, §13.3).** There are two mechanisms:
+**Finding the window in use.** Checking only the frontmost application is insufficient: the same application can have several windows. Candidate signals for M0 are the frontmost application (`NSWorkspace`) combined with the front-to-back order of on-screen windows and `SCWindow.isOnScreen`. Do not use `SCWindow.isActive` for this: Apple documents it as whether the window is [currently streaming](https://developer.apple.com/documentation/screencapturekit/scwindow/isactive), not whether it has focus. Do not request the Accessibility permission to find the focused window. It is far broader than the stated behavior (it allows controlling the computer), and matching its windows to capture windows relies on private API. Where the window in use cannot be determined reliably, skip capture and expose the limitation before enabling ambient observation.
 
-- Apple's system picker, [`SCContentSharingPicker`](https://developer.apple.com/documentation/screencapturekit/sccontentsharingpicker) (macOS 14+). The user picks the window in a system-owned dialog. No general Screen Recording permission is needed, and the choice does not survive a relaunch. M0 must verify that a window chosen this way works with single-frame capture, or whether a short-lived stream is needed.
-- Whoosh's own window list, built from `SCShareableContent`. This requires the Screen Recording permission, which macOS 15 periodically asks the user to re-confirm. The selection can be remembered, but must be revalidated after a restart (§3.1).
+**Permission (adopted).** Whoosh uses the Screen Recording permission and builds its capture filter from `SCShareableContent` at each capture. Apple's system picker, [`SCContentSharingPicker`](https://developer.apple.com/documentation/screencapturekit/sccontentsharingpicker), was considered and rejected: it grants only the windows or apps the user picks in a system dialog for that session, so it cannot follow the user across applications. macOS 15 periodically asks users to re-confirm the Screen Recording permission for apps that capture without the picker. Whoosh cannot suppress this. Onboarding must mention it, and M0 must record how each tested macOS release behaves.
 
-Manual triggers should let the user return to the selected work window before capture. A global Look-now shortcut (§4.4) triggers capture without leaving the work window; the menu-item path needs its own tests. Whoosh's own selection UI, menu, and reply panel must not accidentally cause capture of a different surface. Define and test those transitions explicitly.
+**Capture mechanism (adopted).** Capture uses a single-window content filter (`SCContentFilter(desktopIndependentWindow:)`) with `SCScreenshotManager`. This makes two boundaries structural: Whoosh's own overlay and neighbouring windows cannot appear in the image. Do not rely on `NSWindow.sharingType` for exclusion. The trade-off is that the application's other windows are excluded too, such as floating tool palettes, detached inspectors, popovers, and menus. Test this with a design app that uses floating palettes in M0, and document what the model can and cannot see.
 
-Suspend capture when the selected window closes, becomes ineligible, permission is revoked, the session is locked, or the machine sleeps. Resume only after eligibility is re-established. Do not capture hidden or minimized target content merely because the capture API can provide it.
+**App exclusion list (adopted).** Users can exclude applications that Whoosh must never capture, identified by bundle identifier. The default list contains Whoosh itself, password managers, Keychain Access, the Passwords app, and System Settings. Onboarding shows the list, and excluding the app in use is one action from the menu. While an excluded application is in use, Whoosh skips capture and its menu-bar icon shows that it is skipping.
 
-A selected browser window includes its current tab. The prototype does not promise site-level exclusions, private-tab recognition, or automatic sensitive-content removal. Such features need separate integrations and validation.
+**Whoosh's own interface.** Opening Whoosh's menu or reply panel must not make Whoosh's UI the window in use, or move capture to another surface. Look now captures the window that was in use before Whoosh's menu or panel opened. A global Look-now shortcut (§4.4) triggers capture without leaving the work; the menu-item path needs its own tests. Define and test these transitions explicitly.
+
+Suspend capture when permission is revoked, the session is locked, or the machine sleeps. Resume only after eligibility is re-established.
+
+A browser window includes its current tab, so every site the user visits can be observed unless the browser is excluded. The prototype does not promise site-level exclusions, private-window recognition, or automatic sensitive-content removal. Such features need separate integrations and validation.
 
 ### 5.2 Images and context freshness
 
@@ -286,14 +294,14 @@ Exclude Whoosh's own interface from model input and test that exclusion. Otherwi
 Attach the following local metadata to every request:
 
 - Unique request ID and capture timestamp.
-- Selected window and owning application identity.
+- Captured window and owning application identity.
 - Session/context revision.
 - Memory revision.
 - Manual or ambient trigger type.
 
-Invalidate outstanding work when its context changes, the user pauses, Focus changes, the selected target changes, memory is deleted, or the session ends. Recheck eligibility before display and persistence. Never let a delayed result recreate forgotten information.
+Invalidate outstanding work when its context changes, the user pauses, Hush changes, the user moves to a different window, memory is deleted, or the session ends. Opening Whoosh's own menu or reply panel is not a window change (§5.1). Recheck eligibility before display and persistence. Never let a delayed result recreate forgotten information.
 
-Window identity alone cannot establish that its document has remained unchanged. Use a short expiry and, where practical, a local content-change check of the same authorized window. Discard an automatic response when relevance is uncertain. This remains best effort; the app cannot infer every semantic change from pixels.
+Window identity alone cannot establish that its document has remained unchanged. Use a short expiry and, where practical, a local content-change check of the same window. Discard an automatic response when relevance is uncertain. This remains best effort; the app cannot infer every semantic change from pixels.
 
 ### 5.3 Concurrency and budgets
 
@@ -315,7 +323,7 @@ The initial adapter should use a fixed approved provider endpoint. Provider, mod
 
 In the initial prototype, submitting an inline reply updates bounded session context and shows a brief local acknowledgement. It does not trigger a provider request, take another screenshot, or retrieve a discarded image. The next explicit “Look now,” or later eligible ambient observation, uses the answer. Immediate model-backed conversation and longer explanations are deferred; adding them requires an explicit metered action and a separately bounded presentation.
 
-Entering Whoosh's reply panel is an intentional UI transition, not a new project. Bind the reply to the originating session and question. If the user has changed the selected project/target or ended that session, do not attach a stale reply to the new context. Pause and Focus submission restrictions still apply.
+Entering Whoosh's reply panel is an intentional UI transition, not a new project. Bind the reply to the originating session and question. If the user has changed project or ended that session, do not attach a stale reply to the new context. Pause and Hush submission restrictions still apply.
 
 ### 6.2 What the model returns
 
@@ -358,7 +366,9 @@ The manual and first ambient prototypes keep conversational context in RAM. Exit
 
 Use a small recent-turn buffer and compact summaries with a configured context budget. Keep corrections attached to their source so summarization does not turn a tentative guess into a confirmed fact. Provider requests containing those summaries are still cloud disclosures.
 
-Provide a “New session / project” action that cancels pending work, clears the conversation, unsent drafts, transient observations, and derived summaries, and asks which saved project context to use, if any. Preserve global confirmed preferences unless the user clears them. Selecting another capture target requires choosing whether to continue the same project or start a new session. Ordinary app switching invalidates pending screen-dependent output but does not silently assign a new project. Automatic project detection is deferred.
+Provide a “New session / project” action that cancels pending work, clears the conversation, unsent drafts, transient observations, and derived summaries, and asks which saved project context to use, if any. Preserve global confirmed preferences unless the user clears them. Switching windows or apps invalidates pending screen-dependent output but does not silently assign a new project. Automatic project detection is deferred.
+
+Because observation follows the user across apps, session context accompanies observations of unrelated windows. The instructions must tell the model to use context only when the visible work matches it, and tests must check that details of one piece of work do not appear in comments about another.
 
 ### 7.2 Add three explicit memory categories
 
@@ -370,7 +380,7 @@ Provide a “New session / project” action that cancels pending work, clears t
 
 Tentative interpretations remain marked as inferred. Do not automatically promote them into stable user facts. Only application code can mark a record as confirmed after deliberate user input; the model cannot confer that status. Avoid saving private document contents, third-party details, or secrets merely because they appeared on screen.
 
-For the first persistent-memory implementation, the user explicitly associates a session with a project label. Retrieve project-specific facts only for that selected context. A reused window or similar-looking document is not sufficient evidence that two projects are the same. Global preferences can apply across projects; project details must not leak into unrelated feedback.
+For the first persistent-memory implementation, the user explicitly associates a session with a project label. Retrieve project-specific facts only for that chosen project. A reused window or similar-looking document is not sufficient evidence that two projects are the same. Global preferences can apply across projects; project details must not leak into unrelated feedback.
 
 ### 7.3 Minimal storage model
 
@@ -417,7 +427,7 @@ Before enabling the chosen provider, document exactly which image/text fields ar
 
 ### 8.3 Trust boundaries
 
-The model has no authority to alter capture scope, enable observation, bypass Focus, change limits, promote memories, or access credentials. Screen content cannot authorize those actions either.
+The model has no authority to alter capture scope or the exclusion list, enable observation, bypass Hush, change limits, promote memories, or access credentials. Screen content cannot authorize those actions either.
 
 No automatic external links, computer-control tools, or generated executable visuals belong in the prototype. This reduces the consequences of malicious text embedded in a captured page. Also test whether screen instructions can coax the model into exposing unrelated remembered context in an overlay.
 
@@ -425,11 +435,11 @@ No automatic external links, computer-control tools, or generated executable vis
 
 | Situation | Required behavior |
 |---|---|
-| Capture permission denied or revoked | Stop observation and show an actionable state in settings; never broaden capture scope. |
-| Target closed, minimized, hidden, or not verifiably eligible | Skip capture, invalidate pending work, and require valid eligibility before resuming. |
+| Capture permission denied, revoked, or not re-confirmed when macOS asks | Stop observation and show an actionable state in settings; never broaden capture scope. |
+| Window in use closed, minimized, hidden, excluded, or not verifiably eligible | Skip capture and invalidate pending work for that window; capture again only when an eligible window is in use. |
 | Pause during an API request | Cancel where possible, reject its eventual output, and prevent future dispatch. |
-| Focus enabled during a request or visible bubble | Reject pending output, dismiss visible unsolicited bubbles, and stop active animations. Preserve any unsent user draft locally. |
-| Selected context changes | Discard stale output and any dependent memory proposal. |
+| Hush enabled during a request or visible bubble | Reject pending output, dismiss visible unsolicited bubbles, and stop active animations. Preserve any unsent user draft locally. |
+| The user moves to another window, or the project changes | Discard stale output and any dependent memory proposal. |
 | Wrong key or exhausted provider allowance | Stop automatic attempts; provide a quiet settings-level error requiring user action. |
 | Rate limit or temporary provider error | Apply the bounded retry policy or skip the moment. |
 | Offline, sleep, or wake | No backlog or reconnect burst; revalidate and resume only under the current mode. |
@@ -443,15 +453,15 @@ Errors should be visible in the menu/settings without repeatedly interrupting wo
 
 ### M0 — Platform and interaction feasibility
 
-**Deliverable:** a native app shell with selected-window capture, a fake model response, and an overlay.
+**Deliverable:** a native app shell that captures the window in use, a fake model response, and an overlay.
 
-Validate window-level eligibility, the window-selection mechanism, permission flow, screen scaling, own-overlay exclusion, keyboard focus, global shortcuts, and Pause before introducing live AI. Test multiple windows from the same app, a design app with floating palettes, an external display, Spaces/full-screen transitions, and closing/reopening the target. Support can initially be limited to the validated cases, with unsupported states clearly suspended.
+Validate detection of the window in use, eligibility and the exclusion list, permission flow, screen scaling, own-overlay exclusion, keyboard focus, global shortcuts, and Pause before introducing live AI. Test switching between windows of the same app and between apps, a design app with floating palettes, password fields, an external display, Spaces/full-screen transitions, and closing windows. Support can initially be limited to the validated cases, with unsupported states clearly suspended.
 
 **Exit gate:** capture stays within its declared boundary; a bubble can appear during typing without diverting input; unsupported cases stop safely and visibly. Any needed additional permission is identified and explained.
 
 ### M1 — Manual “Look now” prototype
 
-**Deliverable:** one selected-window image travels to one provider using the user's key and returns one grounded question/comment or an explicit no-comment result. Inline replies improve the next interaction using session context.
+**Deliverable:** one image of the window in use travels to one provider using the user's key and returns one grounded question/comment or an explicit no-comment result. Inline replies improve the next interaction using session context.
 
 Implement response validation, cancellation, staleness checks, the request cap, basic usage reporting, the four controls with small option sets, and two or three polished gestures. Frequency governs future unsolicited messages; manual requests remain subject to usage limits. Do not build a subscription backend.
 
@@ -459,11 +469,11 @@ Implement response validation, cancellation, staleness checks, the request cap, 
 
 ### M2 — Ambient prototype
 
-**Deliverable:** explicitly enabled periodic observation with local interruption rules, deduplication, Focus, budget limits, and no message backlog.
+**Deliverable:** explicitly enabled periodic observation with local interruption rules, deduplication, Hush, budget limits, and no message backlog.
 
 Add modest timing heuristics only after the deterministic rules work. Lack of typing or pointer motion must not be treated as proof that the user is interruptible. During uncertainty, prefer silence. Measure visual enjoyment alongside annoyance.
 
-**Exit gate:** the user completes several 30–60 minute work sessions with correct Pause/Focus behavior, no stale-message bursts, and enough useful or enjoyable moments to justify leaving Whoosh enabled. Record unwanted-interruption reasons and adjust defaults before expanding scope. Manual prototype success alone does not establish ambient success.
+**Exit gate:** the user completes several 30–60 minute work sessions with correct Pause/Hush behavior, no stale-message bursts, and enough useful or enjoyable moments to justify leaving Whoosh enabled. Record unwanted-interruption reasons and adjust defaults before expanding scope. Manual prototype success alone does not establish ambient success.
 
 ### M3 — Inspectable persistent memory
 
@@ -498,14 +508,17 @@ Use synthetic screens and an injected fake provider for repeatable failure tests
 | Test | Expected result |
 |---|---|
 | Put a unique marker in a neighboring window | It never appears in the provider image. |
-| Switch to another window within the same app | Eligibility is updated correctly; app identity alone does not authorize capture. |
-| Display a Whoosh bubble over the target | Whoosh UI is absent from the captured input. |
+| Switch between windows of the same app, and between apps | Capture follows the window in use; pending output about the previous window is discarded. |
+| Make an excluded app, such as a password manager, the app in use | No capture and no request; the menu-bar icon shows that Whoosh is skipping. |
+| Click into a password field in an eligible app | No capture while secure text entry is active. |
+| Open Whoosh's menu or reply panel, then trigger Look now | The window that was in use before is captured, never Whoosh's own UI. |
+| Display a Whoosh bubble over the window in use | Whoosh UI is absent from the captured input. |
 | Delay the provider; then Pause, change windows, or delete memory | No stale overlay or memory write occurs. |
-| Enable Focus during a visible animation | The bubble closes and motion stops immediately; no pending result replaces it. |
+| Enable Hush during a visible animation | The bubble closes and motion stops immediately; no pending result replaces it. |
 | Type while a bubble appears and fades | No lost, redirected, or swallowed keystrokes. |
-| Reply and dismiss with Escape from the reply field; dismiss an unfocused bubble with the global shortcut; click back into work | Focus behavior is predictable and reversible; submitting the reply performs no capture or API call. |
+| Reply and dismiss with Escape from the reply field; dismiss an unfocused bubble with the global shortcut; click back into work | Keyboard focus behaves predictably and reversibly; submitting the reply performs no capture or API call. |
 | Type in other apps, including Escape, while a bubble is visible | Only Whoosh's registered modifier shortcuts are consumed; all other keys reach the user's app. |
-| Select a window in an app with floating palettes or popovers | Only the selected window appears in the provider image, and the documented limitation matches what is captured. |
+| Use an app with floating palettes or popovers | Only the window in use appears in the provider image, and the documented limitation matches what is captured. |
 | Start a new project/session with a reply or request pending | Old drafts and results cannot enter the new project's context. |
 | Return malformed JSON, excessive text, or an unknown gesture | Schema limits and safe fallback apply; raw output is not displayed. |
 | Put hostile instructions in the document | No settings, permissions, credential handling, or memory-persistence rule changes. |
@@ -572,8 +585,10 @@ Define what counts toward the allowance: observations, replies, model tiers, ret
 | Risk | Early response | Evidence needed |
 |---|---|---|
 | Generic or incorrect observations | Narrow the first work types, allow silence, preserve uncertainty. | Reviewed real-work examples and useful corrections. |
-| Accurate but irritating interruptions | Explicit Focus, hard caps, short overlays, conservative timing. | Ambient session feedback after novelty wears off. |
-| Unclear capture boundaries | Window allowlist and platform spike before automation. | Same-app window, tab, hidden-window, and lifecycle tests. |
+| Accurate but irritating interruptions | Explicit Hush, hard caps, short overlays, conservative timing. | Ambient session feedback after novelty wears off. |
+| Unclear capture boundaries | Active-window rule, app exclusion list, and platform spike before automation. | Window-switching, excluded-app, tab, hidden-window, and lifecycle tests. |
+| A whole-screen permission feels invasive | Clear onboarding, visible watching state in the menu bar, exclusion list, one-step Pause. | Onboarding and pilot feedback, including reactions to macOS re-confirmation prompts. |
+| Context from one piece of work leaks into comments on another | Use context only when it matches the visible work; project-scoped memory (§7.2). | Cross-app leakage tests. |
 | Privacy claims exceed actual behavior | Precise local promise, provider review, content-free diagnostics. | Storage/network inspection and provider policy record. |
 | Memory compounds mistakes | Provenance, confirmation, expiry, correction, and deletion. | Controlled memory comparisons and deletion tests. |
 | Cost grows faster than value | One provider, small context, measured request budgets. | Cost per active hour and monthly usage distributions. |
@@ -584,9 +599,10 @@ Define what counts toward the allowance: observations, replies, model tiers, ret
 
 | Decision | Recommendation | Resolve by |
 |---|---|---|
-| Minimum macOS version and target test machines | **Resolved:** macOS 15.0. First test machine: an Apple Silicon MacBook Pro (M4 Pro) running macOS 15.7 with Xcode 26.3, built-in display only. Add a machine on the current macOS release before M4, since capture-permission behavior has changed between releases. | Resolved 10 October 2026 |
-| Window-selection mechanism | System picker if M0 verifies it works with single-frame capture; otherwise Whoosh's own list with the Screen Recording permission (§5.1). | Founder decision 1 (§13.3); verify at M0 |
-| User-facing name for Focus; macOS Focus linkage | Rename to avoid colliding with macOS Focus (§3.4). | Founder decision 2 (§13.3); before M0 UI copy |
+| Minimum macOS version and target test machines | **Resolved:** macOS 15.0. First test machine: an Apple Silicon MacBook Pro (M4 Pro) running macOS 15.7 with Xcode 26.3 signed in to the founder's Apple ID, built-in display only. Add a machine on the current macOS release before M4, since capture-permission behavior has changed between releases. | Resolved 10 October 2026 |
+| Capture permission model | **Resolved:** the Screen Recording permission, so Whoosh can follow the window in use (§5.1). Record how macOS re-confirmation prompts behave on each tested release. | Resolved 10 October 2026; behavior recorded at M0 exit |
+| Default app exclusion list | Start with the list in §5.1; refine from M0 and pilot feedback. | M0 exit, then before M4 |
+| Quiet-mode name and macOS Focus linkage | **Resolved:** Hush, independent of macOS Focus (§3.4). | Resolved 10 October 2026 |
 | Reliable active-window detection and extra permissions | Test public APIs (§5.1); request only permissions needed for the stated behavior. Accessibility and Input Monitoring are not requested. | M0 exit |
 | External-display test hardware | The first test machine has no external display connected. Borrow one, or defer the test explicitly in the M0 results. | M0 exit |
 | First provider/model and endpoint | Benchmark a small set of representative screens; choose one on quality, latency, cost, and retention. | Before live requests in M1 |
@@ -594,25 +610,26 @@ Define what counts toward the allowance: observations, replies, model tiers, ret
 | Final timing and frequency presets | Tune proposed defaults from actual sessions. | M2 exit |
 | Recent-memory retention and record limits | Begin with seven-day opt-in notes and small caps. | M3 implementation |
 | Local-memory encryption needs | Evaluate expected content and pilot requirements. | Before external pilot |
-| Open-source license and repository publication | Choose deliberately; review dependencies and assets. | Before publishing source; before the first code push if the repository is public |
+| Open-source license and repository publication | GPL-3.0 recommended: it keeps derivative versions of the app open, and the hosted service stays a separate codebase. Review dependencies and assets. **Deferred by the founder:** the repository may be public without a license until then (§13.3). | Before accepting outside contributions or the M4 pilot, whichever comes first |
 | Signing, distribution, and update mechanism | Direct signed/notarized distribution is the initial recommendation. | M4 |
 | Subscription price, allowance, and hosted provider policy | Derive from pilot economics and applicable agreements. | M5 |
 
 None of the commercial decisions blocks M0. Provider choice does not block a fake-response overlay prototype. Any change to the confirmed macOS/cloud/BYOK baseline should be recorded before changing implementation direction.
 
-### 13.3 Founder decisions pending
+### 13.3 Founder decisions
 
-These change how the app behaves for users, so they belong to the founder. Neither blocks scaffolding the app.
+Decisions the founder made on 10 October 2026, after the plan review:
 
-1. **How the user selects the window.** Recommended: Apple's system picker. The user picks the window in a system dialog each time Whoosh launches. No general Screen Recording permission is needed and there are no periodic macOS re-confirmation prompts, which matches the rule that an OS grant is not consent to every window. The alternative is Whoosh's own branded window list, which can remember the selection, but needs the Screen Recording permission and its periodic re-confirmation by macOS. If M0 shows the picker cannot support single-frame capture, the own-list route is the fallback either way. Needed before M0 task 3.
-2. **What the quiet switch is called, and whether macOS Focus triggers it.** “Focus” collides with macOS Focus (§3.4). Recommended: a distinct name that fits the brand, such as “Hush”. Also recommended: an active macOS Focus quiets Whoosh too, if M2 finds a public way to detect it without a broad permission. Needed before M0's UI text is written.
+1. **Whoosh observes whichever window the user is working in**, not one window chosen in advance. This needs the Screen Recording permission, granted once during onboarding. Each launch starts paused and needs one Resume action; Whoosh is meant to stay open, so this is rare. macOS 15 periodically asks users to re-confirm the permission, and Whoosh cannot prevent that (§5.1).
+2. **The quiet mode is called Hush**, and it is independent of macOS Focus (§3.4).
+3. **The license is deferred.** The repository can be public before a license is chosen. Until then, the default applies: others can view the code, but have no permission to reuse it. Choose one before accepting outside contributions or starting the M4 pilot (§13.2).
 
 ## 14. First implementation tasks
 
-1. The source repository exists. Add this plan as `docs/PROTOTYPE_PLAN.md`, the presentation as `docs/whoosh-presentation.pdf`, and the project `.gitignore`. Keep credentials, user data, and captured screens out of the repository.
-2. Minimum macOS version and first test machine: recorded (§13.2). Set up a stable Apple Development signing identity (§4.4). Create the Xcode app target, the `WhooshCore` package, and a fake provider adapter.
-3. Implement Pause, window selection, eligibility reporting, and a nonactivating overlay showing fixed example text.
-4. Prove selected-window capture boundaries and typing behavior using synthetic content.
+1. The source repository exists, with this plan at `docs/PROTOTYPE_PLAN.md` and the project `.gitignore`. The license is deliberately deferred (§13.3). Keep credentials, user data, and captured screens out of the repository.
+2. Minimum macOS version and first test machine: recorded (§13.2). Signing: done. The founder's Apple ID is signed in to Xcode (10 October 2026), so every build, from the first one, uses automatic signing with the founder's team and a stable Apple Development identity (§4.4). Xcode creates the certificate on the first signed build; ad-hoc signing is not used. Create the Xcode app target, the `WhooshCore` package, and a fake provider adapter.
+3. Implement the Screen Recording permission flow, Pause/Resume, detection of the window in use, the app exclusion list, eligibility reporting, and a nonactivating overlay showing fixed example text.
+4. Prove active-window capture boundaries and typing behavior using synthetic content.
 5. Record M0 results and any permission or support limitations in this document.
 6. Select the first provider/model, verify retention and pricing, then implement the live M1 loop.
 
@@ -623,7 +640,7 @@ The first demonstrable result is a “Look now” interaction that notices a rea
 ### Product sources
 
 - The founder's original Whoosh description and the product and technical discussions that preceded this plan.
-- [Whoosh presentation](whoosh-presentation.pdf), seven slides, stored next to this plan in `docs/`: especially the observation loop on slide 3, four controls on slide 4, privacy/open-source intent on slide 5, and BYOK/subscription model on slide 6. Deliberate departures from it are recorded in §2.3.
+- The founder's original Whoosh presentation, used as context: the observation loop, the four controls, the privacy and open-source intent, and the BYOK/subscription model. Deliberate departures from it are recorded in §2.3.
 - The founder's explicit confirmation on 10 October 2026: macOS first, cloud AI, and BYOK.
 
 ### Technical sources
@@ -636,3 +653,6 @@ Official sources are linked next to the claims they support. Apple guidance esta
 |---|---|
 | 10 October 2026 | Created the plan from the product discussion and presentation; recorded confirmed platform/inference choices; separated manual, ambient, memory, pilot, and hosted-service milestones. |
 | 10 October 2026 | Plan review, version 0.2. Removed the contradiction that inline replies count toward the request cap; added a request cap from M1 and per-field response limits; recorded departures from the presentation (§2.3); adopted platform decisions (minimum macOS 15.0, project structure, sandboxing and signing, single-window capture filter, no Accessibility or Input Monitoring permission, global shortcuts, logging rule, bubble position, parameterised gestures); clarified keyboard dismissal; added M0 and boundary tests; added founder decisions pending (§13.3); replaced machine-specific paths with repository paths. Marked verified for M0. |
+| 10 October 2026 | Founder decisions, version 0.3: Whoosh observes whichever window the user is working in, using the Screen Recording permission instead of Apple's window picker; added eligibility rules, a default app exclusion list, secure-input skipping, and launch behavior; renamed the quiet mode to Hush, independent of macOS Focus; added related tests and risks; recommended a license; removed the reference to the presentation file. |
+| 10 October 2026 | The founder signed in to Xcode with an Apple ID. Signing is no longer a prerequisite: all builds use automatic signing with a stable development identity from the start (§14, task 2). |
+| 10 October 2026 | The founder deferred the license choice; the repository may be public without one until outside contributions or the M4 pilot (§13.3). |
