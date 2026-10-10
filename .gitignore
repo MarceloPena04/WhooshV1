@@ -1,0 +1,76 @@
+# ---------------------------------------------------------------
+# Whoosh — macOS app (Xcode + Swift Package Manager)
+# ---------------------------------------------------------------
+
+# macOS Finder and filesystem metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+
+# Xcode per-user state (shared schemes in xcshareddata stay tracked)
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+timeline.xctimeline
+playground.xcworkspace
+
+# Build output and test results
+DerivedData/
+build/
+*.hmap
+*.xcresult
+*.dSYM
+*.dSYM.zip
+
+# Swift Package Manager
+# (Package.resolved stays tracked so builds are reproducible)
+.build/
+.swiftpm/
+
+# Built apps, archives, and distribution artifacts
+*.app
+*.xcarchive
+*.ipa
+*.dmg
+*.pkg
+/dist/
+
+# Signing material and secrets: never commit these
+# (provider API keys belong in the macOS Keychain, not in files)
+*.p12
+*.p8
+*.cer
+*.mobileprovision
+*.provisionprofile
+*.keychain
+*.keychain-db
+.env
+.env.*
+!.env.example
+Secrets.xcconfig
+*.local.xcconfig
+
+# Debugging captures that can contain screen content or memory
+*.memgraph
+*.trace
+*.crash
+*.ips
+
+# Whoosh: local-only working material
+# Review sheets, test notes, and anything containing real work content
+# (PROTOTYPE_PLAN §11.2). Synthetic test fixtures go in tracked folders instead.
+/local/
+
+# Editors and tools
+.vscode/
+.idea/
+*.swp
+*~
+.claude/settings.local.json
+CLAUDE.local.md
