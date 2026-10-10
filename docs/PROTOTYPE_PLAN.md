@@ -1,7 +1,7 @@
 # Whoosh: product context and prototype plan
 
-**Version:** 0.3 · **Date:** 10 October 2026  
-**Status:** Verified for M0 on 10 October 2026  
+**Version:** 0.4 · **Date:** 10 October 2026  
+**Status:** M0 complete on 10 October 2026; next is M1, starting with the provider choice (§14, task 6)  
 **Confirmed by the founder:** macOS first; cloud AI; bring your own API key (BYOK); Whoosh observes whichever window the user is working in, or the whole screen they're working on if they choose (This window is the default); a Hush mode independent of macOS Focus ([§13.3](#133-founder-decisions))
 
 ## How to use this plan
@@ -466,6 +466,22 @@ Validate detection of the window in use, eligibility and the exclusion list, per
 
 **Exit gate:** capture stays within its declared boundary; a bubble can appear during typing without diverting input; unsupported cases stop safely and visibly. Any needed additional permission is identified and explained.
 
+**Result (10 October 2026): exit gate met.** On the test machine (§13.2), in both capture scopes (§5.1):
+- *Boundary.* Neighbouring windows, excluded apps, notification banners, and Whoosh's own interface never appeared in a capture (§14, task 4).
+- *Typing.* Bubbles appeared while typing without taking keystrokes or Escape.
+- *Unsupported cases.* Paused, hushed, excluded apps, password fields, and no window all stop the capture and say why, in the menu and in a notice for shortcut requests.
+- *Permissions.* Nothing beyond Screen Recording is needed (§13.2).
+
+Also validated: full-screen toolbar strips (fixed, §5.1), switching apps during a request, Pause and Hush during a request, a Sidecar second display, and the pointer option.
+
+Not explicitly validated in M0, carried into M1 testing:
+- switching between two windows of the same app, a Spaces change, or closing the window during a request (the same identity re-check covers these, but nobody has watched them happen);
+- locking the screen or sleeping (the lock check fails closed and sleep drops work in flight, but neither was exercised);
+- a 1× (non-Retina) display and a cabled external monitor;
+- a design app with floating palettes (only TextEdit's Fonts panel was tested);
+- macOS's periodic Screen Recording re-confirmation, which appears over weeks;
+- the third-party password-manager identifiers in the default exclusion list.
+
 ### M1 — Manual “Look now” prototype
 
 **Deliverable:** one image of the window in use travels to one provider using the user's key and returns one grounded question/comment or an explicit no-comment result. Inline replies improve the next interaction using session context.
@@ -611,11 +627,11 @@ Define what counts toward the allowance: observations, replies, model tiers, ret
 | Decision | Recommendation | Resolve by |
 |---|---|---|
 | Minimum macOS version and target test machines | **Resolved:** macOS 15.0. First test machine: an Apple Silicon MacBook Pro (M4 Pro) running macOS 15.7 with Xcode 26.3 signed in to the founder's Apple ID, built-in display only. Add a machine on the current macOS release before M4, since capture-permission behavior has changed between releases. | Resolved 10 October 2026 |
-| Capture permission model | **Resolved:** the Screen Recording permission, so Whoosh can follow the window in use (§5.1). Record how macOS re-confirmation prompts behave on each tested release. | Resolved 10 October 2026; behavior recorded at M0 exit |
-| Default app exclusion list | Start with the list in §5.1; refine from M0 and pilot feedback. | M0 exit, then before M4 |
+| Capture permission model | **Resolved:** the Screen Recording permission, so Whoosh can follow the window in use (§5.1). On macOS 15.7, granting it required quitting and reopening Whoosh. No periodic re-confirmation prompt was seen during M0; record when one appears. | Resolved 10 October 2026; re-confirmation behavior recorded when observed |
+| Default app exclusion list | Start with the list in §5.1. M0 verified the Apple identifiers; the third-party password-manager identifiers are unverified because none is installed on the test machine. Refine from pilot feedback. | Verify third-party identifiers before M4 |
 | Quiet-mode name and macOS Focus linkage | **Resolved:** Hush, independent of macOS Focus (§3.4). | Resolved 10 October 2026 |
 | Reliable active-window detection and extra permissions | **Resolved for M0:** public APIs suffice: the frontmost app from `NSWorkspace`, the window server's front-to-back list, and the toolbar-strip rule (§5.1). No permission beyond Screen Recording is needed; Accessibility and Input Monitoring are not requested. Recheck on each new macOS release. | Resolved 10 October 2026 |
-| External-display test hardware | **Partly resolved:** an iPad Pro used as a second display through Sidecar (1366 × 1024 points at 2×). Capture of a window on it and bubble placement on its corner passed on 10 October 2026. A cabled external monitor remains untested; test one or defer it explicitly in the M0 results. | M0 exit |
+| External-display test hardware | **Partly resolved:** an iPad Pro used as a second display through Sidecar (1366 × 1024 points at 2×). Capture of a window on it and bubble placement on its corner passed on 10 October 2026. **Deferred at M0 exit:** a cabled external monitor and a 1× display remain untested. | Before M4 |
 | First provider/model and endpoint | Benchmark a small set of representative screens; choose one on quality, latency, cost, and retention. | Before live requests in M1 |
 | Daily request cap and cost warning | Start at 50 attempts per rolling 24 hours (§3.5); include retries and manual observations. | Initial value before M1 live requests; ambient value before M2 |
 | Final timing and frequency presets | Tune proposed defaults from actual sessions. | M2 exit |
@@ -654,7 +670,7 @@ Decisions the founder made on 10 October 2026, after the plan review:
    - *Whole screen, all passed.* The Passwords app's window and a notification banner were absent from the capture, and so were Whoosh's bubble and its menu-bar icon. Only the display in use was captured.
    - *Timing, all passed (confirmed in the logs).* Pause, Hush, or switching apps during a 5-second reply cancelled it with no bubble. Hush closed a visible bubble. Five quick presses produced one observation. The pointer option drew the pointer when turned on.
    - *Storage and logs.* Whoosh's container held only `settings.json` (no screen content) and Xcode's code-coverage file; no image files. Whoosh's own log entries contained no titles or message text. ScreenCaptureKit's window-title entries are the documented exception (§8.2). Whoosh's log entries now use the notice level, because info-level entries had expired before they could be reviewed.
-5. Record M0 results and any permission or support limitations in this document.
+5. Record M0 results and any permission or support limitations in this document. **Done (10 October 2026):** see the M0 result in §10 and the updated rows in §13.2.
 6. Select the first provider/model, verify retention and pricing, then implement the live M1 loop.
 
 The first demonstrable result is a “Look now” interaction that notices a real detail, accepts a correction, and gives a better subsequent comment without disrupting the user's work.
@@ -686,3 +702,4 @@ Official sources are linked next to the claims they support. Apple guidance esta
 | 10 October 2026 | The founder chose to keep the menu bar in Whole screen captures; removed the crop (§2.1, §5.1, §11.1, §13.3, §14). |
 | 10 October 2026 | Founder decisions 5 and 6: the pointer as an opt-in setting, and documenting ScreenCaptureKit's window-title logging (§8.2, §11.1, §13.1, §13.2, §13.3). Whoosh's own log entries moved to the notice level so macOS keeps them for review. |
 | 10 October 2026 | Task 4 done: boundary tests passed in both capture scopes, including timing and typing; recorded the results and tools (§5.1, §13.2, §14). |
+| 10 October 2026 | Version 0.4. M0 complete: exit gate met; results, untested cases, and deferred hardware recorded (§10, §13.2, §14 task 5). |
