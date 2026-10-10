@@ -12,6 +12,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
     public var screenRecordingRequested = false
     public var exclusions = ExclusionList.defaults
     public var captureScope = CaptureScope.window
+    /// Draw the pointer into captures (founder decision 5). Off by default.
+    public var includesPointer = false
 
     public init() {}
 
@@ -21,6 +23,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         case screenRecordingRequested
         case exclusions
         case captureScope
+        case includesPointer
     }
 
     /// Missing keys take their defaults, so adding a setting does not make older files unreadable.
@@ -31,6 +34,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         screenRecordingRequested = try container.decodeIfPresent(Bool.self, forKey: .screenRecordingRequested) ?? false
         exclusions = try container.decodeIfPresent(ExclusionList.self, forKey: .exclusions) ?? .defaults
         captureScope = try container.decodeIfPresent(CaptureScope.self, forKey: .captureScope) ?? .window
+        includesPointer = try container.decodeIfPresent(Bool.self, forKey: .includesPointer) ?? false
     }
 }
 

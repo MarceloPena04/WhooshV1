@@ -19,7 +19,8 @@ struct WindowCapturer: Sendable {
     func captureDisplay(
         _ target: DisplayTarget,
         exclusions: ScreenExclusions,
-        focusWindowFrame: CGRect?
+        focusWindowFrame: CGRect?,
+        includesPointer: Bool
     ) async throws -> CapturedImage {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         guard let display = content.displays.first(where: { $0.displayID == target.displayID }) else {
@@ -33,7 +34,7 @@ struct WindowCapturer: Sendable {
         let configuration = SCStreamConfiguration()
         configuration.width = max(1, Int(CGFloat(display.width) * scale))
         configuration.height = max(1, Int(CGFloat(display.height) * scale))
-        configuration.showsCursor = false
+        configuration.showsCursor = includesPointer
 
         let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
         guard let data = Self.pngData(from: image) else { throw CaptureError.encodingFailed }
@@ -45,7 +46,7 @@ struct WindowCapturer: Sendable {
 
     /// This window: exactly one window through a single-window content filter,
     /// so neighbouring windows and Whoosh's own overlay cannot appear.
-    func captureWindow(_ window: WindowIdentity, processID: pid_t) async throws -> CapturedImage {
+    func captureWindow(_ window: WindowIdentity, processID: pid_t, includesPointer: Bool) async throws -> CapturedImage {
         let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
         // Re-check identity right before capture: the same window ID, still on
         // screen, still owned by the same process and app.
@@ -61,7 +62,7 @@ struct WindowCapturer: Sendable {
         let scale = CGFloat(filter.pointPixelScale)
         configuration.width = max(1, Int(filter.contentRect.width * scale))
         configuration.height = max(1, Int(filter.contentRect.height * scale))
-        configuration.showsCursor = false
+        configuration.showsCursor = includesPointer
         configuration.ignoreShadowsSingleWindow = true
 
         let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)

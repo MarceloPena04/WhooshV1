@@ -95,7 +95,7 @@ final class HotKeyCenter {
                 Log.lifecycle.error("Shortcut \(shortcut.rawValue, privacy: .public) unavailable: \(status, privacy: .public)")
             }
         }
-        Log.lifecycle.info("Registered \(self.hotKeys.count, privacy: .public) of \(Shortcut.allCases.count, privacy: .public) shortcuts")
+        Log.lifecycle.notice("Registered \(self.hotKeys.count, privacy: .public) of \(Shortcut.allCases.count, privacy: .public) shortcuts")
     }
 
     private func handle(_ id: UInt32) {

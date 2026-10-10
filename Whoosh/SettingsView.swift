@@ -9,6 +9,10 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Look at").font(.headline)
                 CaptureScopePicker(model: model)
+                Toggle("Include the pointer", isOn: Binding(get: { model.settings.includesPointer }, set: { model.setIncludesPointer($0) }))
+                Text("Shows the AI where you're pointing. The pointer can cover a few letters of small text.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
             }
             VStack(alignment: .leading, spacing: 8) {
                 Text("Excluded apps").font(.headline)
@@ -20,7 +24,7 @@ struct SettingsView: View {
             }
         }
         .padding(20)
-        .frame(width: 460, height: 560)
+        .frame(width: 460, height: 620)
     }
 }
 

@@ -63,6 +63,9 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         let wholeScreen = item("Whole Screen", #selector(lookAtWholeScreen))
         wholeScreen.state = model.settings.captureScope == .screen ? .on : .off
         menu.addItem(wholeScreen)
+        let pointer = item("Include Pointer", #selector(toggleIncludesPointer))
+        pointer.state = model.settings.includesPointer ? .on : .off
+        menu.addItem(pointer)
         menu.addItem(.separator())
 
         if let name = model.appInUseName, let bundleIdentifier = model.appInUseBundleIdentifier {
@@ -78,6 +81,14 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         }
         menu.addItem(item("Welcome to Whoosh…", #selector(showOnboarding)))
         menu.addItem(.separator())
+        #if DEBUG
+        menu.addItem(note("Test Build"))
+        menu.addItem(item("Show Last Capture…", #selector(showCaptureViewer)))
+        let slow = item("Slow Placeholder Replies (5 s)", #selector(toggleSlowReplies))
+        slow.state = model.slowReplies ? .on : .off
+        menu.addItem(slow)
+        menu.addItem(.separator())
+        #endif
         menu.addItem(NSMenuItem(title: "Quit Whoosh", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
 
@@ -132,7 +143,10 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     @objc private func requestPermission() { model.requestPermission() }
     @objc private func lookAtThisWindow() { model.setCaptureScope(.window) }
     @objc private func lookAtWholeScreen() { model.setCaptureScope(.screen) }
+    @objc private func toggleIncludesPointer() { model.setIncludesPointer(!model.settings.includesPointer) }
     @objc private func showSettings() { windows.showSettings(model: model) }
+    @objc private func showCaptureViewer() { windows.showCaptureViewer(model: model) }
+    @objc private func toggleSlowReplies() { model.slowReplies.toggle() }
     @objc private func showOnboarding() { windows.showOnboarding(model: model) }
 
     @objc private func stopExcludingAppInUse() {

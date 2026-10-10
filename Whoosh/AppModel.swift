@@ -21,6 +21,12 @@ final class AppModel {
     private(set) var appInUseName: String?
     private(set) var appInUseBundleIdentifier: String?
     var unavailableShortcuts: [Shortcut] = []
+    /// Test builds only: the last image that would have gone to the provider,
+    /// kept in memory for the boundary tests (§14, task 4). Always nil in
+    /// release builds. Cleared on Pause, sleep, and lock; never written to disk.
+    private(set) var lastCapture: DebugCapture?
+    /// Test builds only: replies take 5 seconds, leaving time to Pause or switch apps mid-request.
+    var slowReplies = false
 
     var indicator: StatusIndicator { StatusIndicator(eligibility: eligibility, isHushed: isHushed) }
     var isLooking: Bool { gate.isBusy }
@@ -37,6 +43,13 @@ final class AppModel {
         script: [
             .reply(FakeProvider.placeholderComment, after: .milliseconds(700)),
             .reply(FakeProvider.placeholderQuestion, after: .milliseconds(700)),
+        ],
+        repeatsScript: true
+    )
+    private let slowProvider: any ProviderAdapter = FakeProvider(
+        script: [
+            .reply(FakeProvider.placeholderComment, after: .seconds(5)),
+            .reply(FakeProvider.placeholderQuestion, after: .seconds(5)),
         ],
         repeatsScript: true
     )
@@ -58,7 +71,7 @@ final class AppModel {
         detector.onAppInUseChange = { [weak self] in self?.appInUseChanged() }
         observeSystemEvents()
         refresh()
-        Log.lifecycle.info("Launched paused; permission \(self.hasPermission ? "granted" : "missing", privacy: .public)")
+        Log.lifecycle.notice("Launched paused; permission \(self.hasPermission ? "granted" : "missing", privacy: .public)")
     }
 
     // MARK: - State
@@ -91,16 +104,17 @@ final class AppModel {
     func resume() {
         isPaused = false
         refresh()
-        Log.lifecycle.info("Resumed")
+        Log.lifecycle.notice("Resumed")
     }
 
     /// Stops new capture, cancels work in flight, and closes the bubble (§3.4).
     func pause() {
         isPaused = true
+        lastCapture = nil
         invalidateWork()
         overlay.dismiss(animated: false)
         refresh()
-        Log.lifecycle.info("Paused")
+        Log.lifecycle.notice("Paused")
     }
 
     /// Hush is about interruptions, not privacy: turning it on drops pending
@@ -112,7 +126,7 @@ final class AppModel {
             overlay.dismiss(animated: false)
         }
         refresh()
-        Log.lifecycle.info("Hush \(self.isHushed ? "on" : "off", privacy: .public)")
+        Log.lifecycle.notice("Hush \(self.isHushed ? "on" : "off", privacy: .public)")
     }
 
     func dismissBubble() {
@@ -141,7 +155,10 @@ final class AppModel {
             return
         }
         // One observation in flight; repeated triggers are dropped, not queued (§5.3).
-        guard !gate.isBusy else { return }
+        guard !gate.isBusy else {
+            Log.capture.notice("Look now ignored: one is already in flight")
+            return
+        }
 
         refresh()
         let observation = lastObservation
@@ -151,7 +168,7 @@ final class AppModel {
                     Self.describe(reason, appName: observation.appName, bundleIdentifier: observation.bundleIdentifier),
                     nearWindowAt: observation.windowFrame ?? observation.displayFrame
                 )
-                Log.capture.info("Look now skipped: \(reason.rawValue, privacy: .public)")
+                Log.capture.notice("Look now skipped: \(reason.rawValue, privacy: .public)")
             }
             return
         }
@@ -166,18 +183,19 @@ final class AppModel {
         do {
             let image = switch token.target {
             case .window(let window):
-                try await capturer.captureWindow(window, processID: processID)
+                try await capturer.captureWindow(window, processID: processID, includesPointer: settings.includesPointer)
             case .display(let display):
                 try await capturer.captureDisplay(
                     display,
                     exclusions: ScreenExclusions(list: settings.exclusions, ownBundleIdentifier: policy.ownBundleIdentifier),
-                    focusWindowFrame: display.focusWindow == nil ? nil : observation.windowFrame
+                    focusWindowFrame: display.focusWindow == nil ? nil : observation.windowFrame,
+                    includesPointer: settings.includesPointer
                 )
             }
             let captureDuration = ContinuousClock.now - started
             // Validate again before dispatch (§5.1).
             guard isStillCurrent(token) else {
-                Log.capture.info("Discarded before dispatch: context changed")
+                Log.capture.notice("Discarded before dispatch: context changed")
                 return
             }
             let request = ObservationRequest(
@@ -188,14 +206,19 @@ final class AppModel {
                 memoryRevision: 0,
                 image: image
             )
+            #if DEBUG
+            lastCapture = DebugCapture(target: token.target, image: image, capturedAt: request.capturedAt)
+            let reply = try await (slowReplies ? slowProvider : provider).send(request)
+            #else
             let reply = try await provider.send(request)
+            #endif
             let response = try ResponseValidator.validate(reply.payload)
             // And again before display (§5.2).
             guard isStillCurrent(token) else {
-                Log.capture.info("Discarded before display: context changed")
+                Log.capture.notice("Discarded before display: context changed")
                 return
             }
-            Log.capture.info("Look now: \(response.kind.rawValue, privacy: .public), \(Self.scopeName(token.target), privacy: .public), \(image.pixelWidth, privacy: .public)x\(image.pixelHeight, privacy: .public) px, capture \(captureDuration.milliseconds, privacy: .public) ms")
+            Log.capture.notice("Look now: \(response.kind.rawValue, privacy: .public), \(Self.scopeName(token.target), privacy: .public), \(image.pixelWidth, privacy: .public)x\(image.pixelHeight, privacy: .public) px, capture \(captureDuration.milliseconds, privacy: .public) ms")
             guard response.kind != .silent else { return }
             overlay.show(
                 BubbleContent(
@@ -207,7 +230,7 @@ final class AppModel {
                 nearWindowAt: bubbleFrame
             )
         } catch is CancellationError {
-            Log.capture.info("Look now cancelled")
+            Log.capture.notice("Look now cancelled")
         } catch {
             let nsError = error as NSError
             Log.capture.error("Look now failed: \(nsError.domain, privacy: .public) \(nsError.code, privacy: .public)")
@@ -234,7 +257,7 @@ final class AppModel {
     private func appInUseChanged() {
         if gate.isBusy {
             invalidateWork()
-            Log.capture.info("Discarded: app in use changed")
+            Log.capture.notice("Discarded: app in use changed")
         }
         refresh()
     }
@@ -246,7 +269,12 @@ final class AppModel {
         updateSettings { $0.captureScope = scope }
         invalidateWork()
         refresh()
-        Log.lifecycle.info("Capture scope: \(scope.rawValue, privacy: .public)")
+        Log.lifecycle.notice("Capture scope: \(scope.rawValue, privacy: .public)")
+    }
+
+    func setIncludesPointer(_ includesPointer: Bool) {
+        updateSettings { $0.includesPointer = includesPointer }
+        Log.lifecycle.notice("Pointer in captures: \(includesPointer ? "on" : "off", privacy: .public)")
     }
 
     func excludeAppInUse() {
@@ -323,6 +351,7 @@ final class AppModel {
     }
 
     private func systemBecameUnavailable() {
+        lastCapture = nil
         invalidateWork()
         overlay.dismiss(animated: false)
         refresh()

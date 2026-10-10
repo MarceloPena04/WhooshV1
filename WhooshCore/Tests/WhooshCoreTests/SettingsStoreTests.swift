@@ -19,6 +19,7 @@ struct SettingsStoreTests {
         var settings = AppSettings()
         settings.onboardingCompleted = true
         settings.captureScope = .screen
+        settings.includesPointer = true
         settings.exclusions.add(ExcludedApp(bundleIdentifier: "com.example.Notes", name: "Notes"))
 
         try store.save(settings)
@@ -52,5 +53,6 @@ struct SettingsStoreTests {
         #expect(settings.onboardingCompleted)
         #expect(settings.exclusions == .defaults)
         #expect(settings.captureScope == .window)
+        #expect(!settings.includesPointer)
     }
 }

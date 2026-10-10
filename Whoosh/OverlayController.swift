@@ -57,7 +57,7 @@ final class OverlayController {
         panel.orderFrontRegardless()
         self.panel = panel
         scheduleFade(after: duration)
-        Log.overlay.info("Bubble shown")
+        Log.overlay.notice("Bubble shown")
     }
 
     func showNotice(_ message: String, nearWindowAt windowFrame: CGRect?) {

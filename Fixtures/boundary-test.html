@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Whoosh boundary test</title>
+<!-- Synthetic test content for the M0 boundary tests (PROTOTYPE_PLAN §11.1, §14 task 4).
+     Contains no real work content. Opens offline; loads nothing from the network. -->
+<style>
+  :root {
+    --bg: #f6f5f2; --panel: #ffffff; --text: #1d1d1f; --muted: #6e6e73;
+    --line: #d8d6d0; --ok: #1f7a3a; --bad: #b3261e; --accent: #3554d1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1c1c1e; --panel: #2c2c2e; --text: #f2f2f7; --muted: #a1a1a6;
+            --line: #3a3a3c; --ok: #4cc26b; --bad: #ff6b60; --accent: #8fa5ff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px; background: var(--bg); color: var(--text);
+         font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .muted { color: var(--muted); }
+  .code { margin: 16px 0; padding: 18px 20px; border-radius: 12px; color: #fff;
+          font: 700 44px/1 ui-monospace, Menlo, monospace; letter-spacing: 4px; }
+  .code small { display: block; font: 600 13px/1.2 -apple-system, sans-serif; letter-spacing: 0; opacity: .85; margin-bottom: 8px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 14px 0; }
+  h2 { font-size: 15px; margin: 0 0 8px; }
+  textarea, input { width: 100%; font: 15px ui-monospace, Menlo, monospace; padding: 8px; border-radius: 8px;
+                    border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+  textarea { height: 90px; resize: vertical; }
+  .status { margin-top: 6px; font-weight: 600; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); }
+  button { font: inherit; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line);
+           background: var(--panel); color: var(--accent); cursor: pointer; }
+  ol { padding-left: 22px; margin: 6px 0 0; }
+  li { margin: 6px 0; }
+  kbd { font: 12px ui-monospace, Menlo, monospace; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+  label { display: flex; gap: 8px; align-items: flex-start; }
+  label input { width: auto; margin-top: 4px; }
+  .neighbour section, .neighbour .main-only { display: none; }
+</style>
+</head>
+<body>
+  <h1 id="heading">Whoosh boundary test</h1>
+  <div class="muted main-only">Synthetic page for the M0 boundary tests. Nothing here is real work.</div>
+
+  <div class="code" id="code"><small id="code-label">THIS WINDOW'S CODE</small><span id="code-value"></span></div>
+
+  <div class="main-only">
+    <button id="open-neighbour">Open a neighbour window</button>
+    <span class="muted">It shows a different code. Overlap it with this window for test 1.</span>
+  </div>
+
+  <section>
+    <h2>Typing check</h2>
+    <div class="muted">Type this sentence again and again, with a space between repeats. Press <kbd>⌃⌥⌘L</kbd> partway through and keep typing.</div>
+    <p><strong id="target"></strong></p>
+    <textarea id="typing" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+    <div class="status" id="typing-status">Nothing typed yet.</div>
+    <div class="status" id="escape-status">Escape presses received: 0</div>
+    <div class="status" id="leak-status">Whoosh shortcuts that reached this page: 0 (should stay 0)</div>
+  </section>
+
+  <section>
+    <h2>Password field</h2>
+    <div class="muted">Click into this field, then press <kbd>⌃⌥⌘L</kbd>. Whoosh should refuse to look.</div>
+    <input type="password" id="password" placeholder="Not a real password" autocomplete="off">
+  </section>
+
+  <section>
+    <h2>Checklist</h2>
+    <div class="muted">Keep the Whoosh menu's <em>Show Last Capture…</em> window open on your other screen. Ticks here aren't saved.</div>
+    <ol>
+      <li><label><input type="checkbox"><span><strong>This Window: neighbour.</strong> Open a neighbour window and overlap it with this one. Click this page, press <kbd>⌃⌥⌘L</kbd>. The capture shows only this window's code, without the neighbour or any Whoosh bubble.</span></label></li>
+      <li><label><input type="checkbox"><span><strong>This Window: menu path.</strong> Choose Look Now from the Whoosh menu. The capture shows this page, not Whoosh's menu.</span></label></li>
+      <li><label><input type="checkbox"><span><strong>Password.</strong> Click the password field and press <kbd>⌃⌥⌘L</kbd>. Whoosh says a password field is active, and the capture viewer doesn't change.</span></label></li>
+      <li><label><input type="checkbox"><span><strong>Typing.</strong> Type the sentence, pressing <kbd>⌃⌥⌘L</kbd> partway. While the bubble is up, press <kbd>Esc</kbd>. Typing stays ✓, Escape is counted, and shortcuts stay at 0.</span></label></li>
+      <li><label><input type="checkbox"><span><strong>Floating panel.</strong> In TextEdit, open a document and press <kbd>⌘T</kbd> for the Fonts panel. Press <kbd>⌃⌥⌘L</kbd>. The capture shows the document without the Fonts panel. That's the expected limitation.</span></label></li>
+      <li><label><input type="checkbox"><span><strong>Whole Screen: excluded app.</strong> Switch to Look At → Whole Screen. Put the Passwords app's window next to this page, click back into this page, press <kbd>⌃⌥⌘L</kbd>. Passwords is missing from the capture.</span></label></li>
+      <li><label><input type="checkbox"><span><strong>Whole Screen: notification.</strong> Run the notification command from the chat, click this page, and press <kbd>⌃⌥⌘L</kbd> while the banner shows. The banner is missing from the capture.</span></label></li>
+      <li><label><input type="checkbox"><span><strong>Whole Screen: Whoosh itself.</strong> Press <kbd>⌃⌥⌘L</kbd> twice, the second time while the first bubble shows. Neither the bubble nor Whoosh's menu-bar icon is in the capture.</span></label></li>
+      <li><label><input type="checkbox"><span><strong>Whole Screen: one display.</strong> The capture shows only the screen this page is on, never both.</span></label></li>
+      <li><label><input type="checkbox"><span><strong>Late replies.</strong> Turn on Slow Placeholder Replies. Press <kbd>⌃⌥⌘L</kbd>, then within 5 seconds press <kbd>⌃⌥⌘P</kbd>: no bubble. Resume and repeat, switching to another app: no bubble. Repeat with <kbd>⌃⌥⌘H</kbd>: no bubble. Turn Hush and Slow Replies off again.</span></label></li>
+      <li><label><input type="checkbox"><span><strong>Repeated presses.</strong> Press <kbd>⌃⌥⌘L</kbd> five times quickly. Only one bubble appears.</span></label></li>
+    </ol>
+  </section>
+
+<script>
+  const neighbour = new URLSearchParams(location.search).has("neighbour");
+  const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const code = Array.from({ length: 6 }, () => letters[Math.floor(Math.random() * letters.length)]).join("");
+  const hue = Math.floor(Math.random() * 360);
+  document.getElementById("code-value").textContent = code;
+  document.getElementById("code").style.background = `hsl(${hue} 55% 40%)`;
+  document.title = (neighbour ? "Neighbour " : "Whoosh test ") + code;
+  if (neighbour) {
+    document.body.classList.add("neighbour");
+    document.getElementById("heading").textContent = "Neighbour window";
+    document.getElementById("code-label").textContent = "NEIGHBOUR CODE (must not appear in This Window captures)";
+  }
+
+  document.getElementById("open-neighbour").addEventListener("click", () => {
+    window.open(location.pathname + "?neighbour", "neighbour-" + Date.now(),
+                "width=560,height=360,left=" + (screenX + 160) + ",top=" + (screenY + 140));
+  });
+
+  // Typing: compare what was typed with the sentence repeated, so a lost,
+  // doubled, or redirected keystroke shows up as a mismatch.
+  const sentence = "the quick brown fox jumps over the lazy dog 1234567890";
+  document.getElementById("target").textContent = sentence;
+  const typing = document.getElementById("typing");
+  const typingStatus = document.getElementById("typing-status");
+  typing.addEventListener("input", () => {
+    const typed = typing.value;
+    if (!typed.length) { typingStatus.textContent = "Nothing typed yet."; typingStatus.className = "status"; return; }
+    const expected = (sentence + " ").repeat(Math.ceil(typed.length / (sentence.length + 1)) + 1);
+    for (let i = 0; i < typed.length; i++) {
+      if (typed[i] !== expected[i]) {
+        typingStatus.textContent = `✗ Mismatch at character ${i + 1}: expected “${expected[i]}”, got “${typed[i]}”. A typo counts too; clear the box and retry.`;
+        typingStatus.className = "status bad";
+        return;
+      }
+    }
+    typingStatus.textContent = `✓ ${typed.length} characters, all correct`;
+    typingStatus.className = "status ok";
+  });
+
+  // Escape must reach the page; Whoosh's ⌃⌥⌘ shortcuts must not.
+  let escapes = 0, leaks = 0;
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      escapes++;
+      document.getElementById("escape-status").textContent = `Escape presses received: ${escapes}`;
+    }
+    if (event.ctrlKey && event.altKey && event.metaKey && /^[lphd]$/i.test(event.key)) {
+      leaks++;
+      const leak = document.getElementById("leak-status");
+      leak.textContent = `Whoosh shortcuts that reached this page: ${leaks} (should stay 0)`;
+      leak.className = "status bad";
+    }
+  }, true);
+</script>
+</body>
+</html>

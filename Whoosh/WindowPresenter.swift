@@ -19,7 +19,13 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
         }
     }
 
-    private func show<Content: View>(id: String, title: String, @ViewBuilder content: () -> Content) {
+    func showCaptureViewer(model: AppModel) {
+        show(id: "capture", title: "Last Capture (test build)", resizable: true) {
+            CaptureViewerView(model: model)
+        }
+    }
+
+    private func show<Content: View>(id: String, title: String, resizable: Bool = false, @ViewBuilder content: () -> Content) {
         if let window = windows[id] {
             window.makeKeyAndOrderFront(nil)
             NSApp.activate()
@@ -27,7 +33,7 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
         }
         let window = NSWindow(contentViewController: NSHostingController(rootView: content()))
         window.title = title
-        window.styleMask = [.titled, .closable]
+        window.styleMask = resizable ? [.titled, .closable, .resizable, .miniaturizable] : [.titled, .closable]
         window.isReleasedWhenClosed = false
         window.delegate = self
         window.center()
