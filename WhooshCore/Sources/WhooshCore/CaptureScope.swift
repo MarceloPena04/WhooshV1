@@ -6,8 +6,8 @@ import Foundation
 public enum CaptureScope: String, Codable, Sendable, CaseIterable {
     /// Only the window the user is working in.
     case window
-    /// The whole display the user is working on, minus excluded apps, Whoosh,
-    /// the system surfaces in `ScreenExclusions`, and the menu bar.
+    /// The whole display the user is working on, menu bar included, minus
+    /// excluded apps, Whoosh, and the system surfaces in `ScreenExclusions`.
     case screen
 }
 
@@ -48,21 +48,14 @@ public enum FocusRegion {
     /// - Parameters:
     ///   - window: The window in use, in global display coordinates (points, top-left origin).
     ///   - display: The captured display, in the same coordinates.
-    ///   - croppedTop: Points removed from the top of the display, such as the menu bar.
     ///   - scale: Pixels per point in the captured image.
     /// - Returns: The visible part of the window in image pixels, or nil when none of it was captured.
-    public static func pixels(window: CGRect, display: CGRect, croppedTop: CGFloat, scale: CGFloat) -> CGRect? {
-        let captured = CGRect(
-            x: display.minX,
-            y: display.minY + croppedTop,
-            width: display.width,
-            height: display.height - croppedTop
-        )
-        let visible = window.intersection(captured)
+    public static func pixels(window: CGRect, display: CGRect, scale: CGFloat) -> CGRect? {
+        let visible = window.intersection(display)
         guard !visible.isNull, visible.width > 0, visible.height > 0 else { return nil }
         return CGRect(
-            x: (visible.minX - captured.minX) * scale,
-            y: (visible.minY - captured.minY) * scale,
+            x: (visible.minX - display.minX) * scale,
+            y: (visible.minY - display.minY) * scale,
             width: visible.width * scale,
             height: visible.height * scale
         )

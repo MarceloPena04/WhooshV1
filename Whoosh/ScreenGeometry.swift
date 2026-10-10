@@ -25,10 +25,4 @@ enum ScreenGeometry {
     static func displayID(of screen: NSScreen) -> CGDirectDisplayID? {
         (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value
     }
-
-    /// The menu bar's height on `screen`, including the camera housing on
-    /// displays with a notch; zero when the menu bar hides itself.
-    static func menuBarHeight(of screen: NSScreen) -> CGFloat {
-        max(screen.frame.maxY - screen.visibleFrame.maxY, screen.safeAreaInsets.top)
-    }
 }

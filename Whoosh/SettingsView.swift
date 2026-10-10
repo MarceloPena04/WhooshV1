@@ -49,7 +49,7 @@ struct CaptureScopePicker: View {
         case .window:
             "Only the window you're working in. Other windows, the desktop, and Whoosh itself are never in the picture."
         case .screen:
-            "Everything on the screen you're working on, including other windows and the desktop. Once an AI model is connected, all of it goes to the provider, including any chats or emails left open. Excluded apps, notifications, password prompts, and the menu bar are removed from the picture. Consider excluding chat and mail apps."
+            "Everything on the screen you're working on, including other windows, the desktop, and the menu bar. Once an AI model is connected, all of it goes to the provider, including any chats or emails left open. Excluded apps, notifications, and password prompts are removed from the picture. Consider excluding chat and mail apps."
         }
     }
 }

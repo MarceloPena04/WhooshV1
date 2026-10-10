@@ -171,7 +171,6 @@ final class AppModel {
                 try await capturer.captureDisplay(
                     display,
                     exclusions: ScreenExclusions(list: settings.exclusions, ownBundleIdentifier: policy.ownBundleIdentifier),
-                    menuBarHeight: observation.menuBarHeight,
                     focusWindowFrame: display.focusWindow == nil ? nil : observation.windowFrame
                 )
             }

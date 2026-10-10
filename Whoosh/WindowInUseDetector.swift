@@ -15,7 +15,6 @@ struct WindowObservation {
     var displayID: CGDirectDisplayID?
     /// That display's frame, in the same coordinates as `windowFrame`.
     var displayFrame: CGRect?
-    var menuBarHeight: CGFloat = 0
     var isScreenLocked = false
     var isSecureInputActive = false
 }
@@ -68,7 +67,6 @@ final class WindowInUseDetector {
         if let screen, let displayID = ScreenGeometry.displayID(of: screen) {
             observation.displayID = displayID
             observation.displayFrame = CGDisplayBounds(displayID)
-            observation.menuBarHeight = ScreenGeometry.menuBarHeight(of: screen)
         }
         return observation
     }

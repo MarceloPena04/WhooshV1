@@ -13,13 +13,12 @@ enum CaptureError: Error {
 /// Captures what the capture scope allows (§5.1). The image stays in memory;
 /// nothing is written to disk (§8.2).
 struct WindowCapturer: Sendable {
-    /// Whole screen: one display through a filter that removes excluded apps,
-    /// Whoosh, and private system surfaces, cropped below the menu bar. The
-    /// window server leaves those windows out, so what lies behind shows through.
+    /// Whole screen: one display, menu bar included, through a filter that
+    /// removes excluded apps, Whoosh, and private system surfaces. The window
+    /// server leaves those windows out, so what lies behind shows through.
     func captureDisplay(
         _ target: DisplayTarget,
         exclusions: ScreenExclusions,
-        menuBarHeight: CGFloat,
         focusWindowFrame: CGRect?
     ) async throws -> CapturedImage {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
@@ -31,22 +30,15 @@ struct WindowCapturer: Sendable {
         }
         let filter = SCContentFilter(display: display, excludingApplications: hidden, exceptingWindows: [])
         let scale = CGFloat(filter.pointPixelScale)
-        let source = CGRect(
-            x: 0,
-            y: menuBarHeight,
-            width: CGFloat(display.width),
-            height: CGFloat(display.height) - menuBarHeight
-        )
         let configuration = SCStreamConfiguration()
-        configuration.sourceRect = source
-        configuration.width = max(1, Int(source.width * scale))
-        configuration.height = max(1, Int(source.height * scale))
+        configuration.width = max(1, Int(CGFloat(display.width) * scale))
+        configuration.height = max(1, Int(CGFloat(display.height) * scale))
         configuration.showsCursor = false
 
         let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
         guard let data = Self.pngData(from: image) else { throw CaptureError.encodingFailed }
         let focusRegion = focusWindowFrame.flatMap {
-            FocusRegion.pixels(window: $0, display: display.frame, croppedTop: menuBarHeight, scale: scale)
+            FocusRegion.pixels(window: $0, display: display.frame, scale: scale)
         }
         return CapturedImage(format: .png, data: data, pixelWidth: image.width, pixelHeight: image.height, focusRegion: focusRegion)
     }
