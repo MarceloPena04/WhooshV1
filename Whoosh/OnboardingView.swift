@@ -46,6 +46,10 @@ struct OnboardingView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Excluded apps").font(.headline)
+                        Text("If your password manager, or anything else you never want Whoosh to see, isn't listed, open it and choose Add Running App.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                         ExcludedAppsView(model: model)
                     }
                 }
