@@ -12,6 +12,21 @@ struct FakeProviderTests {
         #expect(provider.receivedRequestIDs.count == 2)
     }
 
+    @Test func repeatsTheScriptWhenAsked() async throws {
+        let provider = FakeProvider(
+            script: [.reply(FakeProvider.placeholderComment), .reply(FakeProvider.placeholderQuestion)],
+            repeatsScript: true
+        )
+        var replies: [ProviderReply] = []
+        for _ in 0..<3 { replies.append(try await provider.send(.fixture())) }
+        #expect(replies == [FakeProvider.placeholderComment, FakeProvider.placeholderQuestion, FakeProvider.placeholderComment])
+    }
+
+    @Test(arguments: [FakeProvider.placeholderComment, FakeProvider.placeholderQuestion])
+    func placeholdersPassValidation(reply: ProviderReply) throws {
+        #expect(try ResponseValidator.validate(reply.payload).kind != .silent)
+    }
+
     @Test func throwsScriptedFailures() async {
         let provider = FakeProvider(script: [.failure(.invalidCredentials), .failure(.rateLimited(retryAfter: .seconds(2)))])
 

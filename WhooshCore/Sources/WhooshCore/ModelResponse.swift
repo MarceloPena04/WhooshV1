@@ -15,12 +15,12 @@ public struct ModelResponse: Sendable, Equatable {
     /// Internal context: never displayed, and not durable memory (§6.2).
     public let observation: String
     public let uncertainty: String
-    public let gesture: Gesture
+    public let gesture: BubbleGesture
 }
 
 /// The approved gestures a response may select (§3.3). The app renders them;
 /// the model only names one.
-public enum Gesture: String, Sendable, CaseIterable {
+public enum BubbleGesture: String, Sendable, CaseIterable {
     case questionArrival = "question_arrival"
     case observationArrival = "observation_arrival"
     case acknowledgement
@@ -83,7 +83,7 @@ public enum ResponseValidator {
             message = try bounded(wire.message, limit: limits.message, field: .message)
             guard !message.isEmpty else { throw .missingMessage }
         }
-        let gesture = wire.animationID.flatMap(Gesture.init(rawValue:)) ?? .staticFallback
+        let gesture = wire.animationID.flatMap(BubbleGesture.init(rawValue:)) ?? .staticFallback
 
         return ModelResponse(
             kind: kind,

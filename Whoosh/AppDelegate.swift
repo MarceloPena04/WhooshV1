@@ -1,25 +1,34 @@
 import AppKit
 
-/// Owns Whoosh's menu-bar presence. Whoosh has no Dock icon and no main
-/// window (LSUIElement); everything starts from this menu (§2.1).
+/// Wires Whoosh together at launch. Whoosh has no Dock icon and no main
+/// window (LSUIElement); everything starts from the menu-bar menu (§2.1).
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var statusItem: NSStatusItem?
+    private var model: AppModel?
+    private var statusMenu: StatusMenuController?
+    private var hotKeys: HotKeyCenter?
+    private let windows = WindowPresenter()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = NSImage(systemSymbolName: "wind", accessibilityDescription: "Whoosh")
-        item.menu = makeMenu()
-        statusItem = item
+        let model = AppModel()
+        let statusMenu = StatusMenuController(model: model, windows: windows)
+        model.onIndicatorChange = { [weak statusMenu] in statusMenu?.updateIcon() }
+
+        let hotKeys = HotKeyCenter { [weak model] shortcut in model?.handle(shortcut) }
+        hotKeys.registerAll()
+        model.unavailableShortcuts = hotKeys.unavailable
+
+        self.model = model
+        self.statusMenu = statusMenu
+        self.hotKeys = hotKeys
+
+        // Onboarding appears until the user finishes it once (§3.1).
+        if !model.settings.onboardingCompleted {
+            windows.showOnboarding(model: model)
+        }
     }
 
-    private func makeMenu() -> NSMenu {
-        let menu = NSMenu()
-        // Each launch starts paused (§3.1). Resume, Hush, and Look now arrive
-        // with the capture work (§14, task 3).
-        menu.addItem(NSMenuItem(title: "Whoosh is paused", action: nil, keyEquivalent: ""))
-        menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Quit Whoosh", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
-        return menu
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
     }
 }

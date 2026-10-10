@@ -34,19 +34,23 @@ public final class FakeProvider: ProviderAdapter {
     }
 
     private let fallback: Step
+    private let repeatsScript: Bool
     private let clock: any Clock<Duration>
     private let state: Mutex<State>
 
     /// - Parameters:
     ///   - script: Steps consumed in order, one per request.
     ///   - fallback: The step used once the script runs out.
+    ///   - repeatsScript: Whether the script starts over instead of running out.
     ///   - clock: The clock that times each step's delay.
     public init(
         script: [Step] = [],
         fallback: Step = .reply(FakeProvider.sampleQuestion),
+        repeatsScript: Bool = false,
         clock: any Clock<Duration> = ContinuousClock()
     ) {
         self.fallback = fallback
+        self.repeatsScript = repeatsScript
         self.clock = clock
         self.state = Mutex(State(script: script))
     }
@@ -59,7 +63,10 @@ public final class FakeProvider: ProviderAdapter {
     public func send(_ request: ObservationRequest) async throws -> ProviderReply {
         let step = state.withLock { state in
             state.receivedRequestIDs.append(request.id)
-            return state.script.isEmpty ? fallback : state.script.removeFirst()
+            guard !state.script.isEmpty else { return fallback }
+            let step = state.script.removeFirst()
+            if repeatsScript { state.script.append(step) }
+            return step
         }
         if step.delay > .zero {
             try await clock.sleep(for: step.delay)
@@ -85,6 +92,29 @@ extension FakeProvider {
           "message": "Is this page for first-time visitors or existing users?",
           "animation_id": "question_arrival",
           "memory_candidates": []
+        }
+        """.utf8))
+
+    /// M0 placeholders: no model is connected, so they claim nothing about the window.
+    public static let placeholderComment = ProviderReply(payload: Data("""
+        {
+          "schema_version": 1,
+          "observation": "Placeholder: no model is connected.",
+          "uncertainty": "Nothing was analysed.",
+          "response_type": "comment",
+          "message": "Placeholder comment: Whoosh captured the window you're in. Real comments arrive once an AI model is connected.",
+          "animation_id": "observation_arrival"
+        }
+        """.utf8))
+
+    public static let placeholderQuestion = ProviderReply(payload: Data("""
+        {
+          "schema_version": 1,
+          "observation": "Placeholder: no model is connected.",
+          "uncertainty": "Nothing was analysed.",
+          "response_type": "question",
+          "message": "Placeholder question: what are you working on? Replying arrives in a later step.",
+          "animation_id": "question_arrival"
         }
         """.utf8))
 }
